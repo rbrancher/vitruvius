@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import { magazines } from '../data/magazines';
+import { getCollection } from 'astro:content';
+
+const allArticles = (
+  await Promise.all(
+    (['arquitextos', 'arquiteturismo', 'drops', 'minha-cidade', 'entrevista', 'resenhasonline', 'projetos'] as const)
+      .map(async (col) => { try { return await getCollection(col); } catch { return []; } })
+  )
+)
+  .flat()
+  .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime())
+  .slice(0, 8);
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+}
+---
+
+<Base title="vitruvius" description="Portal de arquitetura, urbanismo e cultura. Publicações, notícias, eventos e concursos para arquitetos e urbanistas.">
+
+  <div class="rule-two active" style="margin-top:16px;">
+    <a href="/">publicações recentes</a>
+  </div>
+
+  <ul style="margin-top:4px;">
+    {allArticles.map((article) => {
+      const slug = article.collection;
+      const mag = magazines.find((m) => m.slug === slug);
+      return (
+        <li class="revistas-entry">
+          <h1>
+            <a href={`/revistas/read/${slug}/${article.data.issue}/${article.data.legacyId}`}>
+              {article.data.title}
+            </a>
+          </h1>
+          {article.data.subtitle && <h2>{article.data.subtitle}</h2>}
+          <h3 class="author">{article.data.authors.map((a) => a.name).join('; ')}</h3>
+          <h3 class="date">
+            <a href={`/revistas/browse/${slug}`}>{mag?.name}</a>
+            {' · '}{formatDate(article.data.publishedAt)}
+          </h3>
+        </li>
+      );
+    })}
+  </ul>
+
+  <div class="rule-five" style="margin-top:32px;">
+    <strong>revistas</strong>
+  </div>
+  <div class="magazine-index" style="margin-top:4px;">
+    {magazines.map((mag) => (
+      <a href={`/revistas/browse/${mag.slug}`} class="magazine-index-item">
+        <span class="magazine-index-item__name">{mag.name}</span>
+        <span class="magazine-index-item__desc">{mag.description}</span>
+      </a>
+    ))}
+  </div>
+</Base>

@@ -1,0 +1,239 @@
+---
+interface GalleryImage {
+  src: string;       // full-size image URL
+  thumb: string;     // thumbnail URL
+  caption: string;   // alt text / caption
+}
+
+interface Props {
+  images: GalleryImage[];
+  id: string; // unique id per page (for multiple galleries)
+}
+
+const { images, id } = Astro.props;
+---
+
+{images.length > 0 && (
+  <div class="image-gallery" data-gallery-id={id}>
+    <!-- Main slide area -->
+    <div class="gallery-container">
+      <ul class="gallery-slide">
+        {images.map((img, i) => (
+          <li class={i === 0 ? 'active' : ''}>
+            <img src={img.src} alt={img.caption} loading={i === 0 ? 'eager' : 'lazy'} />
+          </li>
+        ))}
+      </ul>
+
+      {images.length > 1 && (
+        <>
+          <button class="gallery-nav gallery-prev" aria-label="imagem anterior">&#8249;</button>
+          <button class="gallery-nav gallery-next" aria-label="próxima imagem">&#8250;</button>
+        </>
+      )}
+
+      <div class="gallery-infobar">
+        <div class="gallery-caption">{images[0].caption}</div>
+        {images.length > 1 && (
+          <div class="gallery-counter">1/{images.length}</div>
+        )}
+      </div>
+    </div>
+
+    <!-- Thumbnail strip -->
+    {images.length > 1 && (
+      <div class="gallery-thumbs">
+        <ul>
+          {images.map((img, i) => (
+            <li class={i === 0 ? 'active' : ''}>
+              <button data-index={i} aria-label={`ir para imagem ${i + 1}`}>
+                <img src={img.thumb} alt={img.caption} loading="lazy" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+)}
+
+<style>
+  .image-gallery {
+    margin: 4px 0 8px 0;
+  }
+
+  .gallery-container {
+    position: relative;
+    background: #000;
+    margin-bottom: 4px;
+  }
+
+  .gallery-slide {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .gallery-slide li {
+    display: none;
+    margin: 0;
+  }
+  .gallery-slide li.active {
+    display: block;
+  }
+
+  .gallery-slide img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;
+    background: #000;
+  }
+
+  /* Prev / Next buttons */
+  .gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    border: none;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 28px;
+    line-height: 1;
+    width: 32px;
+    height: 64px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.1s;
+    z-index: 2;
+  }
+  .gallery-nav:hover { background: rgba(0,0,0,0.75); }
+  .gallery-prev { left: 0; }
+  .gallery-next { right: 0; }
+
+  /* Caption bar */
+  .gallery-infobar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 4px 2px 0 2px;
+    background: #EEE;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    line-height: 14px;
+    min-height: 18px;
+  }
+
+  .gallery-caption {
+    flex: 1;
+    color: #333;
+  }
+
+  .gallery-counter {
+    flex-shrink: 0;
+    margin-left: 8px;
+    color: #666;
+    font-weight: bold;
+  }
+
+  /* Thumbnail strip */
+  .gallery-thumbs {
+    overflow: hidden;
+  }
+
+  .gallery-thumbs ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .gallery-thumbs li {
+    margin: 0;
+    padding: 0;
+  }
+
+  .gallery-thumbs button {
+    display: block;
+    border: 2px solid transparent;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    transition: border-color 0.1s;
+  }
+
+  .gallery-thumbs li.active button,
+  .gallery-thumbs button:hover {
+    border-color: #000;
+  }
+
+  .gallery-thumbs img {
+    display: block;
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    opacity: 0.7;
+    transition: opacity 0.1s;
+  }
+
+  .gallery-thumbs li.active img,
+  .gallery-thumbs button:hover img {
+    opacity: 1;
+  }
+</style>
+
+<script>
+  // Vanilla JS gallery — runs once per gallery instance on the page
+  document.querySelectorAll<HTMLElement>('.image-gallery').forEach((gallery) => {
+    const slides   = gallery.querySelectorAll<HTMLElement>('.gallery-slide li');
+    const thumbs   = gallery.querySelectorAll<HTMLElement>('.gallery-thumbs li');
+    const caption  = gallery.querySelector<HTMLElement>('.gallery-caption');
+    const counter  = gallery.querySelector<HTMLElement>('.gallery-counter');
+    const prevBtn  = gallery.querySelector<HTMLButtonElement>('.gallery-prev');
+    const nextBtn  = gallery.querySelector<HTMLButtonElement>('.gallery-next');
+
+    let current = 0;
+    const total = slides.length;
+
+    function goTo(index: number) {
+      slides[current].classList.remove('active');
+      thumbs[current]?.classList.remove('active');
+
+      current = (index + total) % total;
+
+      slides[current].classList.add('active');
+      thumbs[current]?.classList.add('active');
+
+      if (caption) {
+        const img = slides[current].querySelector('img');
+        caption.textContent = img?.alt ?? '';
+      }
+      if (counter) {
+        counter.textContent = `${current + 1}/${total}`;
+      }
+    }
+
+    prevBtn?.addEventListener('click', () => goTo(current - 1));
+    nextBtn?.addEventListener('click', () => goTo(current + 1));
+
+    gallery.querySelectorAll<HTMLButtonElement>('.gallery-thumbs button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.index ?? '0', 10);
+        goTo(idx);
+      });
+    });
+
+    // Keyboard navigation when gallery is focused
+    gallery.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft')  goTo(current - 1);
+      if (e.key === 'ArrowRight') goTo(current + 1);
+    });
+  });
+</script>

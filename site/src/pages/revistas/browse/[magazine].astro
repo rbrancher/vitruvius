@@ -1,0 +1,86 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { magazines, getMagazine } from '../../../data/magazines';
+
+export async function getStaticPaths() {
+  return magazines.map((mag) => ({ params: { magazine: mag.slug } }));
+}
+
+const { magazine } = Astro.params;
+const meta = getMagazine(magazine)!;
+
+type CollectionName = 'arquitextos' | 'arquiteturismo' | 'drops' | 'minha-cidade' | 'entrevista' | 'resenhasonline' | 'projetos';
+type AnyEntry = CollectionEntry<CollectionName>;
+
+const collectionName = magazine as CollectionName;
+let articles: AnyEntry[] = [];
+try {
+  articles = (await getCollection(collectionName) as AnyEntry[])
+    .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
+} catch {}
+
+// Group by issue, sorted newest first
+const byIssue = articles.reduce<Record<string, AnyEntry[]>>((acc, article) => {
+  const key = article.data.issue;
+  if (!acc[key]) acc[key] = [];
+  acc[key].push(article);
+  return acc;
+}, {});
+const issues = Object.keys(byIssue).sort((a, b) => b.localeCompare(a));
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+}
+---
+
+<Base title={`${meta.name} | revistas`} description={meta.description}>
+
+  <!-- Magazine header bar -->
+  <div class={`magazine-header ${magazine}`} style="margin-top:16px;">
+    <div class="magazine-header__logo-wrap">
+      <a href={`/revistas/browse/${magazine}`} class="magazine-header__logo">
+        {meta.name}
+      </a>
+    </div>
+    <div class="magazine-header__right">
+      {meta.issn && <p class="magazine-header__issn">{meta.name} ISSN {meta.issn}</p>}
+      <ul class="magazine-header__links">
+        <li><a href={`/revistas/search/${magazine}`}>arquivo</a></li>
+        <li><a href={`/revistas/expedient/${magazine}`}>expediente</a></li>
+        <li><a href="/revistas/norms">normas</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Issue listing -->
+  <div class={magazine}>
+    {issues.length === 0 && (
+      <p style="color:#666; margin-top:16px;">Nenhum artigo publicado ainda.</p>
+    )}
+
+    {issues.map((issue) => (
+      <div>
+        <div class="rule-two">
+          <span style="display:block; padding:6px 3px 0 3px; min-height:16px;">
+            {issue}
+          </span>
+        </div>
+        <ul>
+          {byIssue[issue].map((article) => (
+            <li class="revistas-entry">
+              <h1>
+                <a href={`/revistas/read/${magazine}/${article.data.issue}/${article.data.legacyId}`}>
+                  {article.data.title}
+                </a>
+              </h1>
+              {article.data.subtitle && <h2>{article.data.subtitle}</h2>}
+              <h3 class="author">{article.data.authors.map((a) => a.name).join('; ')}</h3>
+              <h3 class="date">{formatDate(article.data.publishedAt)}</h3>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</Base>

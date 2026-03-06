@@ -1,0 +1,134 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from '../../../../../layouts/Base.astro';
+import ImageGallery from '../../../../../components/ImageGallery.astro';
+import { getMagazine } from '../../../../../data/magazines';
+
+type CollectionName = 'arquitextos' | 'arquiteturismo' | 'drops' | 'minha-cidade' | 'entrevista' | 'resenhasonline' | 'projetos';
+type AnyEntry = CollectionEntry<CollectionName>;
+
+export async function getStaticPaths() {
+  const collectionNames: CollectionName[] = [
+    'arquitextos', 'arquiteturismo', 'drops',
+    'minha-cidade', 'entrevista', 'resenhasonline', 'projetos',
+  ];
+
+  const paths = [];
+  for (const name of collectionNames) {
+    let articles: AnyEntry[] = [];
+    try { articles = await getCollection(name) as AnyEntry[]; } catch {}
+    for (const article of articles) {
+      paths.push({
+        params: {
+          magazine: name,
+          issue: article.data.issue,
+          articleId: String(article.data.legacyId),
+        },
+        props: { article, collectionName: name },
+      });
+    }
+  }
+  return paths;
+}
+
+interface Props {
+  article: AnyEntry;
+  collectionName: CollectionName;
+}
+
+const { article, collectionName } = Astro.props;
+const { issue } = Astro.params;
+const meta = getMagazine(collectionName)!;
+const { Content } = await article.render();
+const hasGallery = article.data.images && article.data.images.length > 0;
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+}
+
+const canonicalUrl = new URL(
+  `/revistas/read/${collectionName}/${issue}/${article.data.legacyId}`,
+  Astro.site
+).href;
+---
+
+<Base
+  title={`${meta.name} ${issue}: ${article.data.title}`}
+  description={article.data.abstract}
+  canonicalUrl={canonicalUrl}
+>
+  <div class={collectionName}>
+
+    <!-- Magazine header -->
+    <div class="magazine-header" style="margin-top:16px;">
+      <div class="magazine-header__logo-wrap">
+        <a href={`/revistas/browse/${collectionName}`} class="magazine-header__logo">
+          {meta.name}
+        </a>
+      </div>
+      <div class="magazine-header__right">
+        {meta.issn && <p class="magazine-header__issn">{meta.name} ISSN {meta.issn}</p>}
+        <ul class="magazine-header__links">
+          <li><a href={`/revistas/search/${collectionName}`}>arquivo</a></li>
+          <li><a href={`/revistas/expedient/${collectionName}`}>expediente</a></li>
+          <li><a href="/revistas/norms">normas</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Issue / pagination bar -->
+    <div class="rule-three pagination">
+      <h2>
+        {issue}
+        <span class="info">{article.data.title}</span>
+        <span class="info">{formatDate(article.data.publishedAt)}</span>
+      </h2>
+    </div>
+
+    <!-- Article content -->
+    <div class="article-content revistas-entry">
+
+      <!-- Meta: title + authors -->
+      <div class="meta-data">
+        <h1>{article.data.title}</h1>
+        {article.data.subtitle && <h2>{article.data.subtitle}</h2>}
+        <h3 class="author">
+          {article.data.authors.map((a, i) => (
+            <>
+              {a.name}{a.institution ? ` (${a.institution})` : ''}{i < article.data.authors.length - 1 ? '; ' : ''}
+            </>
+          ))}
+        </h3>
+      </div>
+
+      <!-- Image gallery (if any) -->
+      {hasGallery && (
+        <ImageGallery
+          images={article.data.images}
+          id={`gallery-${article.data.legacyId}`}
+        />
+      )}
+
+      <!-- Abstract -->
+      {article.data.abstract && (
+        <p class="article-abstract">{article.data.abstract}</p>
+      )}
+
+      <!-- Body -->
+      <div class="article-body">
+        <Content />
+      </div>
+
+      <!-- Tags -->
+      {article.data.tags.length > 0 && (
+        <div class="article-tags">
+          <span class="article-tags__label">temas:</span>
+          {article.data.tags.map((tag) => (
+            <span class="tag">{tag}</span>
+          ))}
+        </div>
+      )}
+
+    </div>
+  </div>
+</Base>

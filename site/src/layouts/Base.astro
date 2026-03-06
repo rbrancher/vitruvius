@@ -1,0 +1,128 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  canonicalUrl?: string;
+  activeSection?: 'revistas' | 'jornal' | 'pesquisa';
+  activeMagazine?: string; // magazine slug, e.g. 'arquitextos'
+}
+
+const {
+  title,
+  description,
+  canonicalUrl,
+  activeSection = 'revistas',
+  activeMagazine,
+} = Astro.props;
+
+const siteTitle = 'vitruvius';
+const fullTitle = title === siteTitle
+  ? title
+  : `${title} | ${siteTitle}`;
+const canonical = canonicalUrl ?? new URL(Astro.url.pathname, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="https://vitruvius.com.br/media/img/favicon.ico" />
+    <meta property="og:title" content={fullTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+
+    <!-- ── Universal Header ── -->
+    <div class="wrap">
+      <div class="universal-header">
+        <div class="universal-header__left">
+          <h1 class="universal-header__logo-text">
+            <a href="/">vitruvius</a><span class="lang-info"> | <strong>pt</strong>|<a href="?lang=es">es</a>|<a href="?lang=en">en</a></span>
+          </h1>
+          <ul class="universal-header__meta">
+            <li><a href="/institucional/newsletter">receba o informativo</a></li>
+            <li><a href="/institucional/sobre">sobre</a></li>
+            <li><a href="/institucional/maisvitruvius">+ vitruvius</a></li>
+          </ul>
+        </div>
+        <div class="universal-header__search">
+          <form action="/pesquisa/search" method="get" class="search-box">
+            <input type="text" name="search" placeholder="busca" aria-label="busca" />
+            <button type="submit">ok</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section Nav (vi | tru | vius) ── -->
+    <div class="wrap">
+      <nav class="section-nav" aria-label="Seções">
+
+        <!-- pesquisa (vi) — inactive unless activeSection === 'pesquisa' -->
+        <div class={`section-nav__col ${activeSection === 'pesquisa' ? 'section-nav__col--active' : 'section-nav__col--inactive'}`}>
+          <a href="/pesquisa" class="section-nav__logo" aria-label="Pesquisa">vi</a>
+          <h2 class="rule-one"><a href="/pesquisa">pesquisa</a></h2>
+          <ul class="section-nav__menu">
+            <li><a href="/pesquisa/jornal">jornal</a></li>
+            <li><a href="/pesquisa/revistas">revistas</a></li>
+            <li><a href="/pesquisa/busca_geral">em vitruvius</a></li>
+          </ul>
+        </div>
+
+        <!-- revistas (tru) — active by default -->
+        <div class={`section-nav__col ${activeSection === 'revistas' ? 'section-nav__col--active' : 'section-nav__col--inactive'}`}>
+          <a href="/revistas" class="section-nav__logo" aria-label="Revistas">tru</a>
+          <h2 class="rule-one"><a href="/revistas">revistas</a></h2>
+          <ul class="section-nav__menu">
+            <li><a href="/revistas/browse/arquitextos">arquitextos</a></li>
+            <li><a href="/revistas/browse/arquiteturismo">arquiteturismo</a></li>
+            <li><a href="/revistas/browse/drops">drops</a></li>
+            <li><a href="/revistas/browse/minha-cidade">minha cidade</a></li>
+            <li><a href="/revistas/browse/entrevista">entrevista</a></li>
+            <li><a href="/revistas/browse/projetos">projetos</a></li>
+            <li><a href="/revistas/browse/resenhasonline">resenhas online</a></li>
+          </ul>
+          {activeSection === 'revistas' && <slot name="magazine-header" />}
+        </div>
+
+        <!-- jornal (vius) — inactive unless activeSection === 'jornal' -->
+        <div class={`section-nav__col ${activeSection === 'jornal' ? 'section-nav__col--active' : 'section-nav__col--inactive'}`}>
+          <a href="/jornal" class="section-nav__logo" aria-label="Jornal">vius</a>
+          <h2 class="rule-one"><a href="/jornal">jornal</a></h2>
+          <ul class="section-nav__menu">
+            <li><a href="/jornal/noticias">notícias</a></li>
+            <li><a href="/jornal/agendacultural">agenda cultural</a></li>
+            <li><a href="/jornal/eventos">eventos</a></li>
+            <li><a href="/jornal/concursos">concursos</a></li>
+            <li><a href="/jornal/selections">seleção</a></li>
+          </ul>
+        </div>
+
+      </nav>
+    </div>
+
+    <!-- ── Page Content ── -->
+    <div class="wrap">
+      <main>
+        <slot />
+      </main>
+    </div>
+
+    <!-- ── Universal Footer ── -->
+    <div class="wrap">
+      <footer class="universal-footer">
+        <p>&copy; 2000–{new Date().getFullYear()} Vitruvius<br />Todos os direitos reservados</p>
+        <p>As informações são sempre responsabilidade da fonte citada</p>
+      </footer>
+    </div>
+
+  </body>
+</html>

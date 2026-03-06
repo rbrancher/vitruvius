@@ -1,0 +1,571 @@
+/* ─────────────────────────────────────────────
+   Vitruvius — Design System
+   Faithful reproduction of the original aesthetic.
+   Font: Courier New monospace throughout.
+   ───────────────────────────────────────────── */
+
+:root {
+  --font: 'Courier New', Courier, Arial, sans-serif;
+  --size: 12px;
+  --lh: 16px;
+
+  /* grayscale palette */
+  --black:  #000;
+  --dark:   #333;
+  --mid:    #666;
+  --light:  #999;
+  --pale:   #BBB;
+  --silver: #CCC;
+  --snow:   #EEE;
+  --white:  #FFF;
+
+  /* magazine accents */
+  --arquitextos-accent:    #C00;
+  --arquitextos-bg:        #EEC0C0;
+  --arquiteturismo-accent: #F89820;
+  --arquiteturismo-bg:     #f9d6a7;
+  --drops-accent:          #1C3664;
+  --drops-bg:              #BAC2CF;
+  --minhacidade-accent:    #116699;
+  --minhacidade-bg:        #BCD0DC;
+  --entrevista-accent:     #444;
+  --entrevista-bg:         #DDD;
+  --resenhasonline-accent: #116699;
+  --resenhasonline-bg:     #BCD0DC;
+  --projetos-accent:       #444;
+  --projetos-bg:           #DDD;
+
+  --max-width: 980px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border: 0; }
+html { font-size: var(--size); }
+body {
+  font-family: var(--font);
+  font-size: var(--size);
+  line-height: var(--lh);
+  color: var(--black);
+  background: var(--white);
+  min-width: 320px;
+}
+img { max-width: 100%; display: block; }
+ul { list-style: none; }
+
+/* ── Links ── */
+a:link, a:visited, a:active { color: inherit; text-decoration: none; }
+a:hover { color: var(--black); text-decoration: underline; }
+
+/* ── Container ── */
+.wrap {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 10px;
+}
+
+/* ──────────────────────────────────────
+   UNIVERSAL HEADER (top bar)
+   ────────────────────────────────────── */
+.universal-header {
+  margin: 16px 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.universal-header__left {
+  flex: 1 1 auto;
+}
+
+.universal-header__logo-text {
+  font-size: var(--size);
+  font-weight: bold;
+  line-height: var(--lh);
+  margin: 0 0 0 0;
+}
+.universal-header__logo-text a { color: var(--black); }
+
+.universal-header__logo-text .lang-info {
+  font-weight: normal;
+  font-size: var(--size);
+}
+.universal-header__logo-text .lang-info strong { font-weight: bold; }
+
+.universal-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+}
+.universal-header__meta li {
+  display: inline;
+  color: var(--black);
+  padding-right: 7px;
+}
+.universal-header__meta li::after { content: " | "; }
+.universal-header__meta li:last-child::after { content: ""; }
+.universal-header__meta a { color: var(--black); }
+
+.universal-header__search {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.search-box {
+  display: flex;
+  align-items: stretch;
+  height: 28px;
+}
+.search-box input {
+  font-family: var(--font);
+  font-size: var(--size);
+  background: var(--silver);
+  border: none;
+  padding: 0 4px;
+  width: 168px;
+  color: var(--black);
+  height: 100%;
+}
+.search-box button {
+  font-family: var(--font);
+  font-size: var(--size);
+  font-weight: bold;
+  background: var(--silver);
+  border: none;
+  padding: 0 6px;
+  cursor: pointer;
+  color: var(--black);
+  margin-left: 2px;
+}
+.search-box button:hover { background: var(--pale); }
+
+/* ──────────────────────────────────────
+   SECTION NAV (vi | tru | vius columns)
+   ────────────────────────────────────── */
+.section-nav {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--light);
+  padding-bottom: 8px;
+}
+
+/* The active section (revistas) takes most space, inactive sections collapse */
+.section-nav__col {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.section-nav__col--active {
+  flex: 1 1 auto;
+}
+.section-nav__col--inactive {
+  flex: 0 0 120px;
+  color: var(--pale);
+}
+@media (max-width: 640px) {
+  .section-nav__col--inactive { display: none; }
+}
+
+.section-nav__logo {
+  display: block;
+  height: 56px;
+  margin: 5px 0 15px 0;
+  font-family: var(--font);
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 56px;
+  letter-spacing: -2px;
+  text-decoration: none;
+}
+.section-nav__col--active   .section-nav__logo { color: var(--black); }
+.section-nav__col--inactive .section-nav__logo { color: var(--pale); }
+
+/* rule-one: black bar / inactive: pale bar */
+.rule-one {
+  font-size: var(--size);
+  font-weight: bold;
+  margin: 0 0 4px 0;
+  padding: 0;
+  text-transform: lowercase;
+  line-height: var(--lh);
+}
+.rule-one a {
+  display: block;
+  padding: 6px 3px 0 3px;
+  height: var(--lh);
+  line-height: var(--lh);
+  padding-bottom: 0;
+  color: var(--white);
+  text-decoration: none;
+}
+.rule-one a:hover { text-decoration: none; }
+
+.section-nav__col--active   .rule-one { background: var(--black); color: var(--white); }
+.section-nav__col--inactive .rule-one { background: var(--pale);  color: var(--white); }
+
+.section-nav__menu {
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+}
+.section-nav__menu li {
+  display: inline;
+  color: inherit;
+  padding: 0 4px 0 1px;
+  font-size: var(--size);
+}
+.section-nav__menu li::after { content: " |"; }
+.section-nav__menu li:last-child::after { content: ""; }
+.section-nav__col--inactive .section-nav__menu li { color: var(--pale); }
+
+/* ──────────────────────────────────────
+   MAGAZINE HEADER (inside revistas col)
+   rule-two, logo, search, archive links
+   ────────────────────────────────────── */
+.magazine-header {
+  margin: 12px 0 0 0;
+  padding: 3px 0 0 0;
+  border-top: 1px solid var(--black);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.magazine-header__logo-wrap {
+  flex: 1 1 auto;
+}
+.magazine-header__logo {
+  font-size: 28px;
+  font-weight: bold;
+  font-family: var(--font);
+  color: var(--black);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 4px;
+  letter-spacing: -1px;
+}
+.magazine-header__logo:hover { text-decoration: none; color: var(--black); }
+
+.magazine-header__right {
+  flex: 0 0 auto;
+  text-align: right;
+  font-size: var(--size);
+}
+
+.magazine-header__issn {
+  color: var(--mid);
+  font-size: var(--size);
+  margin-bottom: 4px;
+}
+
+.magazine-header__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0;
+  margin-top: 2px;
+}
+.magazine-header__links li { display: inline; padding-left: 4px; }
+.magazine-header__links li::before { content: "| "; color: var(--mid); }
+.magazine-header__links li:first-child::before { content: ""; }
+.magazine-header__links a { color: var(--black); }
+
+/* ──────────────────────────────────────
+   RULE-TWO: section/issue bar
+   ────────────────────────────────────── */
+.rule-two {
+  font-size: var(--size);
+  font-weight: bold;
+  margin: 16px 0 4px 0;
+  padding: 0;
+  background: var(--mid);
+  color: var(--white);
+  text-transform: lowercase;
+  overflow: hidden;
+}
+.rule-two a {
+  display: block;
+  padding: 6px 3px 0 3px;
+  color: var(--white);
+  text-decoration: none;
+  min-height: var(--lh);
+}
+.rule-two:hover, .rule-two.active { background: var(--black); }
+
+/* Per-magazine rule-two accent */
+.arquitextos    .rule-two.active, .arquitextos    .rule-two:hover { background: var(--arquitextos-accent); }
+.arquiteturismo .rule-two.active, .arquiteturismo .rule-two:hover { background: var(--arquiteturismo-accent); }
+.drops          .rule-two.active, .drops          .rule-two:hover { background: var(--drops-accent); }
+.minha-cidade   .rule-two.active, .minha-cidade   .rule-two:hover { background: var(--minhacidade-accent); }
+.entrevista     .rule-two.active, .entrevista     .rule-two:hover { background: var(--entrevista-accent); }
+.resenhasonline .rule-two.active, .resenhasonline .rule-two:hover { background: var(--resenhasonline-accent); }
+.projetos       .rule-two.active, .projetos       .rule-two:hover { background: var(--projetos-accent); }
+
+/* ──────────────────────────────────────
+   RULE-THREE: issue/pagination bar
+   ────────────────────────────────────── */
+.rule-three {
+  font-size: var(--size);
+  margin: 0 0 8px 0;
+  padding: 0 1px;
+  border-top: 4px solid var(--black);
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.rule-three h2 {
+  font-size: var(--size);
+  font-weight: bold;
+  margin: 0;
+  padding: 4px 0 0 0;
+  line-height: var(--lh);
+}
+.rule-three h2 .info {
+  font-weight: normal;
+  margin-left: 8px;
+  color: var(--mid);
+}
+.rule-three.pagination { border-top-width: 4px; }
+.arquitextos    .rule-three { border-color: var(--arquitextos-accent); }
+.arquiteturismo .rule-three { border-color: var(--arquiteturismo-accent); }
+.drops          .rule-three { border-color: var(--drops-accent); }
+.minha-cidade   .rule-three { border-color: var(--minhacidade-accent); }
+
+/* ──────────────────────────────────────
+   RULE-FOUR / RULE-FIVE: light separators
+   ────────────────────────────────────── */
+.rule-four {
+  font-size: var(--size);
+  margin: 7px 0 8px 0;
+  padding: 0 1px;
+  border-top: 1px solid var(--black);
+}
+.rule-five {
+  font-size: var(--size);
+  margin: 15px 0 0 0;
+  padding: 0 1px;
+  color: var(--black);
+  border-top: 1px solid var(--mid);
+}
+
+/* ──────────────────────────────────────
+   REVISTAS ENTRY (article listing item)
+   ────────────────────────────────────── */
+.revistas-entry {
+  overflow: hidden;
+  color: var(--black);
+  margin-bottom: 0;
+}
+
+.revistas-entry h1 {
+  font-size: 15px;
+  font-weight: bold;
+  margin: 15px 0 1px 0;
+  padding: 0 1px;
+  line-height: 20px;
+}
+
+.revistas-entry h2 {
+  font-size: var(--size);
+  font-weight: bold;
+  margin: 0 0 0 0;
+  padding: 0 1px;
+}
+
+.revistas-entry h3.author {
+  margin: 0;
+  padding: 0 1px;
+  font-size: var(--size);
+  font-weight: normal;
+  font-style: italic;
+}
+
+.revistas-entry h3.date {
+  font-size: 11px;
+  font-weight: normal;
+  color: var(--mid);
+  padding: 0 1px;
+  margin: 0;
+}
+
+/* ──────────────────────────────────────
+   ARTICLE PAGE (read view)
+   ────────────────────────────────────── */
+.article-content {
+  margin-top: 8px;
+}
+
+/* Article body text — keep monospace but readable */
+.article-body {
+  font-size: var(--size);
+  line-height: var(--lh);
+  color: var(--black);
+  max-width: 640px;
+}
+
+.article-body p {
+  margin-bottom: var(--lh);
+}
+
+.article-body h2 {
+  font-size: var(--size);
+  font-weight: bold;
+  margin: var(--lh) 0 4px 0;
+  border-top: 1px solid var(--black);
+  padding-top: 4px;
+}
+
+.article-body h3 {
+  font-size: var(--size);
+  font-weight: bold;
+  margin: var(--lh) 0 4px 0;
+}
+
+.article-body blockquote {
+  margin: var(--lh) 0;
+  padding: 0 0 0 16px;
+  border-left: 2px solid var(--silver);
+  color: var(--mid);
+}
+
+.article-body ul, .article-body ol {
+  margin: 0 0 var(--lh) 0;
+  padding-left: 16px;
+}
+.article-body ul { list-style: square; }
+.article-body ol { list-style: decimal; }
+.article-body li { margin-bottom: 4px; }
+
+.article-body strong { font-weight: bold; }
+.article-body em { font-style: italic; }
+
+.article-body a { text-decoration: underline; color: var(--black); }
+
+/* meta-data block above article body */
+.meta-data {
+  padding: 0;
+  margin-bottom: 8px;
+}
+.page-meta-data {
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+/* abstract / how to cite */
+.article-abstract {
+  font-size: var(--size);
+  color: var(--mid);
+  font-style: italic;
+  margin: 0 0 var(--lh) 0;
+  padding: 0 1px;
+  border-top: 1px solid var(--light);
+  padding-top: 4px;
+}
+
+/* notes / about author section */
+.about-author, .notes-header {
+  font-size: var(--size);
+  font-weight: bold;
+  margin: 23px 0 var(--lh) 0;
+  border-top: 1px solid var(--black);
+  padding-top: 4px;
+}
+
+.notes-text {
+  font-size: var(--size);
+  margin: 0 0 var(--lh) 0;
+}
+
+/* tags */
+.article-tags {
+  margin-top: 16px;
+  padding-top: 4px;
+  border-top: 1px solid var(--mid);
+  font-size: 11px;
+  color: var(--mid);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.article-tags__label { font-weight: bold; margin-right: 4px; }
+.tag { color: var(--mid); }
+.tag::after { content: " ·"; }
+.tag:last-child::after { content: ""; }
+
+/* ──────────────────────────────────────
+   MAGAZINE INDEX (grid of magazines)
+   ────────────────────────────────────── */
+.magazine-index {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.magazine-index-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 1px;
+  border-top: 1px solid var(--snow);
+  text-decoration: none;
+  color: var(--black);
+}
+.magazine-index-item:first-child { border-top: none; }
+.magazine-index-item:hover { background: var(--snow); text-decoration: none; }
+
+.magazine-index-item__name {
+  font-weight: bold;
+  font-size: var(--size);
+  min-width: 140px;
+  flex-shrink: 0;
+}
+.magazine-index-item__desc {
+  font-size: var(--size);
+  color: var(--mid);
+}
+.magazine-index-item__freq {
+  font-size: 11px;
+  color: var(--pale);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────
+   UNIVERSAL FOOTER
+   ────────────────────────────────────── */
+.universal-footer {
+  overflow: hidden;
+  border-top: 1px solid var(--light);
+  color: var(--mid);
+  margin-top: 16px;
+  padding: var(--lh) 0;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: var(--size);
+}
+
+/* ──────────────────────────────────────
+   UTILITIES
+   ────────────────────────────────────── */
+.clear { clear: both; }
+.text-mid { color: var(--mid); }
+.text-pale { color: var(--pale); }
+
+/* ──────────────────────────────────────
+   RESPONSIVE
+   ────────────────────────────────────── */
+@media (max-width: 600px) {
+  .universal-header { flex-wrap: wrap; }
+  .universal-header__search { width: 100%; }
+  .magazine-header { flex-direction: column; }
+  .magazine-index-item { flex-wrap: wrap; }
+  .magazine-index-item__freq { margin-left: 0; }
+}

@@ -1,0 +1,20 @@
+---
+import Base from '../../layouts/Base.astro';
+import { magazines } from '../../data/magazines';
+---
+
+<Base title="revistas" description="Publicações do portal Vitruvius: arquitextos, arquiteturismo, drops, minha cidade, entrevista, projetos e resenhas online.">
+  <div class="rule-two active" style="margin-top:16px;">
+    <a href="/revistas">revistas</a>
+  </div>
+
+  <div class="magazine-index" style="margin-top:8px;">
+    {magazines.map((mag) => (
+      <a href={`/revistas/browse/${mag.slug}`} class="magazine-index-item">
+        <span class="magazine-index-item__name">{mag.name}</span>
+        <span class="magazine-index-item__desc">{mag.description}</span>
+        <span class="magazine-index-item__freq">{mag.frequency}</span>
+      </a>
+    ))}
+  </div>
+</Base>

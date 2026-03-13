@@ -1,43 +1,102 @@
-# Astro Starter Kit: Minimal
+# vitruvius — Astro SSG
 
-```sh
-npm create astro@latest -- --template minimal
+Static-site rewrite of [vitruvius.com.br](https://vitruvius.com.br) using [Astro 5](https://astro.build).
+
+## Dev commands
+
+Run from inside `site/`:
+
+| Command           | Action                                     |
+| :---------------- | :----------------------------------------- |
+| `npm install`     | Install dependencies                       |
+| `npm run dev`     | Start dev server at `localhost:4321`       |
+| `npm run build`   | Build to `./dist/`                         |
+| `npm run preview` | Preview the production build locally       |
+
+## Project layout
+
 ```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
+site/
+├── public/                        # Static assets (robots.txt, favicon, etc.)
 ├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+│   ├── components/
+│   │   └── ImageGallery.astro     # Slideshow with thumbnails + keyboard nav
+│   ├── content/                   # Markdown articles (one dir per magazine)
+│   │   ├── config.ts              # Content collection schemas
+│   │   ├── arquitextos/           # sample: 4 articles
+│   │   ├── arquiteturismo/        # (empty — fill from SQL export)
+│   │   ├── drops/
+│   │   ├── entrevista/
+│   │   ├── minha-cidade/
+│   │   ├── projetos/
+│   │   └── resenhasonline/
+│   ├── data/
+│   │   └── magazines.ts           # Magazine metadata (slug, name, ISSN, colour)
+│   ├── layouts/
+│   │   └── Base.astro             # Full-page shell: header, section nav, footer
+│   ├── pages/
+│   │   ├── index.astro            # Home — 8 most-recent articles across all magazines
+│   │   └── revistas/
+│   │       ├── index.astro        # Magazine directory
+│   │       ├── browse/[magazine].astro   # Issue listing for one magazine
+│   │       └── read/[magazine]/[issue]/[articleId].astro  # Article reader
+│   └── styles/
+│       └── global.css             # Design system (Courier New, grayscale + accents)
+├── astro.config.mjs
+├── package.json
+└── tsconfig.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Content schema
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+Each article lives as a `.md` file whose frontmatter satisfies `articleSchema` (`src/content/config.ts`):
 
-Any static assets, like images, can be placed in the `public/` directory.
+```yaml
+---
+legacyId: 1002          # numeric ID from the legacy PHP system — used in URL
+title: "Article title"
+subtitle: "Optional subtitle"
+issue: "01.001"         # "{year}.{number}" — matches directory-level grouping
+authors:
+  - name: Author Name
+    institution: Optional University
+abstract: "Optional abstract text."
+tags: [tag1, tag2]
+publishedAt: 2000-01-01
+images:
+  - src: https://vitruvius.com.br/media/images/magazines/year01/img001.jpg
+    thumb: https://vitruvius.com.br/media/images/magazines/year01/img001_thumb.jpg
+    caption: "Image caption"
+coverImage: "https://..."   # optional OG image
+pdfUrl: "https://..."       # optional PDF link
+---
 
-## 🧞 Commands
+Article body in Markdown...
+```
 
-All commands are run from the root of the project, from a terminal:
+## URL structure
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```
+/                                        home (recent articles)
+/revistas                                magazine directory
+/revistas/browse/{magazine}              issue listing for a magazine
+/revistas/read/{magazine}/{issue}/{id}   article reader
+```
 
-## 👀 Want to learn more?
+Mirrors the existing PHP URL scheme so existing links and search-engine rankings are preserved.
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## Migration plan
+
+1. Export SQL from the legacy MySQL database.
+2. Run a migration script (TBD: `scripts/import-sql.ts`) to convert rows into
+   per-article `.md` files under `src/content/{magazine}/`.
+3. Run `npm run build` — Astro will generate one static HTML file per article.
+4. Deploy the `dist/` directory to any CDN / static host.
+
+## Design system
+
+`global.css` is a faithful reproduction of the original site's visual language:
+
+- Font: **Courier New** throughout, 12 px base / 16 px line-height
+- Palette: grayscale (`--black` → `--white`) + per-magazine accent colours
+- Layout helpers: `.wrap` (max 980 px), `.rule-one` – `.rule-five`, `.section-nav`, `.magazine-header`, `.revistas-entry`, `.article-body`

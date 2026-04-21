@@ -6,7 +6,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "deploy": "astro build && wrangler pages deploy dist --project-name vitruvius",
+    "upload-media": "node scripts/upload-media.mjs"
   },
   "dependencies": {
     "@pagefind/default-ui": "^1.5.2",
@@ -14,6 +16,9 @@
     "better-sqlite3": "^12.9.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13"
+    "@aws-sdk/client-s3": "^3.1033.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "mime-types": "^3.0.2",
+    "wrangler": "^4.84.0"
   }
 }

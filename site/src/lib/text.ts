@@ -27,13 +27,15 @@ export function stripHtml(html: string | null | undefined): string {
  * Variants live at "media/images/magazines/{size}/filename.jpg"
  * Size options: grid_1..grid_16, gallery_thumb, originals
  */
+const R2_BASE = 'https://pub-b2c5a3f3806a4e169a40d2daa5f0f7ad.r2.dev';
+
 export function imageUrl(src: string | null | undefined, size = 'grid_9'): string {
   if (!src) return '';
   const slash = src.lastIndexOf('/');
-  if (slash === -1) return `/${src}`;
+  if (slash === -1) return `${R2_BASE}/${src}`;
   const dir = src.slice(0, slash);
   const file = src.slice(slash + 1);
-  return `/${dir}/${size}/${file}`;
+  return `${R2_BASE}/${dir}/${size}/${file}`;
 }
 
 /**

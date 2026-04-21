@@ -1,43 +1,58 @@
-# Astro Starter Kit: Minimal
+# Vitruvius 2.0
 
-```sh
-npm create astro@latest -- --template minimal
+Static site rebuild of [Vitruvius](https://vitruvius.com.br), a Brazilian architecture and urbanism publication active since 1999. The original site runs on a legacy PHP/Kohana stack; this version is a full reimplementation as a statically generated site built with Astro.
+
+## Architecture
+
+- **Framework**: [Astro](https://astro.build) — all pages are statically generated at build time
+- **Data**: SQLite database (`vitruvius.db`, not tracked in git) built from the original site's data export via `scripts/build-db.mjs`
+- **Images**: served from external storage (Cloudflare R2), not tracked in git
+- **Styling**: custom CSS grid system (12-column, 4 responsive breakpoints) matching the original site's visual language
+
+## Publications
+
+The site covers seven magazines:
+
+| Slug | Title |
+|---|---|
+| `arquitextos` | arquitextos |
+| `arquiteturismo` | arquiteturismo |
+| `drops` | drops |
+| `minhacidade` | minha cidade |
+| `entrevista` | entrevista |
+| `projetos` | projetos |
+| `resenhasonline` | resenhas online |
+
+## Project structure
+
 ```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
+site/
+├── public/              # Static assets (logos, favicons); media/ excluded from git
+├── scripts/
+│   └── build-db.mjs     # Imports original data dump into vitruvius.db
 ├── src/
-│   └── pages/
-│       └── index.astro
+│   ├── components/      # Shared Astro components (ArticleGallery, etc.)
+│   ├── layouts/         # Base layout
+│   ├── lib/
+│   │   ├── db.ts        # SQLite queries (better-sqlite3)
+│   │   └── text.ts      # HTML processing, image URL helpers
+│   ├── pages/
+│   │   ├── index.astro
+│   │   ├── autor/       # Author profile pages
+│   │   ├── pesquisa/    # Full-text search
+│   │   └── revistas/    # Magazine browsing and article reading
+│   └── styles/
+│       └── global.css
 └── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Setup
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+The database and media files are not included in this repository. To run the site locally you need both.
 
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```sh
+npm install
+npm run dev       # dev server at localhost:4321
+npm run build     # static build to dist/
+npm run preview   # preview the build locally
+```

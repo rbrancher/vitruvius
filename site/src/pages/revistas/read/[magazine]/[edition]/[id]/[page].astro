@@ -106,7 +106,7 @@ const nextUrl = pageNum < totalPages ? `${baseUrl}/${pageNum + 1}` : null;
   magazine={magazineSlug}
   editionIdx={editionIdx}
 >
-  <div class="container">
+
 
     <!-- Edition bar: full width -->
     <div class="rule-three rule-three--mag">
@@ -115,8 +115,8 @@ const nextUrl = pageNum < totalPages ? `${baseUrl}/${pageNum + 1}` : null;
       <span class="ed-info">{edHeaderRight}</span>
     </div>
 
-    <!-- Header row -->
-    <div class="clearfix">
+    <!-- Header row: title/author full meta-data width, no sidebar -->
+    <div class="meta-data">
       <div class="grid_9 alpha">
         <header class="article-header">
           <h1>
@@ -142,7 +142,6 @@ const nextUrl = pageNum < totalPages ? `${baseUrl}/${pageNum + 1}` : null;
           )}
         </header>
       </div>
-      <div class="grid_3 omega"></div>
     </div>
 
     <!-- Content row -->
@@ -202,7 +201,7 @@ const nextUrl = pageNum < totalPages ? `${baseUrl}/${pageNum + 1}` : null;
         )}
       </div>
 
-      <!-- Sidebar: grid_3 -->
+      <!-- Sidebar: grid_3 omega -->
       <div class="grid_3 omega article-sidebar">
         <div class="service">
 

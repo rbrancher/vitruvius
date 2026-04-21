@@ -26,58 +26,38 @@ ul, ol { list-style: none; }
 [data-magazine="resenhasonline"] { --mag-color: #009245; --mag-color-light: #b3dfc6; }
 
 /* ── Responsive grid ──────────────────────────────────────────────────────
-   4 breakpoints, base module 12px, gutter 24px (margin: 0 12px per col).
-   Formula: grid_N = N × unit − 12.  grid_9.α + 24 + grid_3.ω = container.
-
-   XL ≥ 1440px  unit 120px   (10 × 12)
-   L  ≥ 1152px  unit  96px   ( 8 × 12)  ← default
-   M  ≥  864px  unit  72px   ( 6 × 12)
-   S  ≥  720px  unit  60px   ( 5 × 12)
-   < 720px      single column
+   16-column structure: container holds all 16 cols, content occupies central
+   12, leaving 2 empty cols (120px) on each side — matching the original.
+   Gutter: 24px (margin: 0 12px per col). Formula: grid_N = N × unit − 12.
+   L  ≥ 1200px     container 1104px  padding 120px  inner 864px  unit 72px  8/4 split
+   M  1056–1199px  container  960px  padding 120px  inner 720px  unit 60px  8/4 split  ← original
+   < 1056px     single column, padding 48px/side
 ──────────────────────────────────────────────────────────────────────── */
 
-.container { width: 1152px; margin: 0 auto; }
+.container { width: 1104px; padding: 0 120px; box-sizing: border-box; margin: 0 auto; }
 [class^="grid_"] { float: left; margin: 0 12px; }
 .clearfix::after, .container::after { content: ''; display: table; clear: both; }
 .alpha { margin-left: 0; }
 .omega { margin-right: 0; }
 
-/* L default — unit 96px */
-.grid_1  { width:   84px; } .grid_2  { width:  180px; } .grid_3  { width:  276px; }
-.grid_4  { width:  372px; } .grid_5  { width:  468px; } .grid_6  { width:  564px; }
-.grid_7  { width:  660px; } .grid_8  { width:  756px; } .grid_9  { width:  852px; }
-.grid_10 { width:  948px; } .grid_11 { width: 1044px; } .grid_12 { width: 1140px; }
+/* L default ≥ 1200px — unit 72px, inner 864px */
+.grid_1  { width:  60px; } .grid_2  { width:  132px; } .grid_3  { width:  204px; }
+.grid_4  { width:  276px; } .grid_5  { width:  348px; } .grid_6  { width:  420px; }
+.grid_7  { width:  492px; } .grid_8  { width:  564px; } .grid_9  { width:  636px; }
+.grid_10 { width:  708px; } .grid_11 { width:  780px; } .grid_12 { width:  852px; }
 
-/* XL ≥ 1440px — unit 120px */
-@media (min-width: 1440px) {
-  .container { width: 1440px; }
-  .grid_1  { width:  108px; } .grid_2  { width:  228px; } .grid_3  { width:  348px; }
-  .grid_4  { width:  468px; } .grid_5  { width:  588px; } .grid_6  { width:  708px; }
-  .grid_7  { width:  828px; } .grid_8  { width:  948px; } .grid_9  { width: 1068px; }
-  .grid_10 { width: 1188px; } .grid_11 { width: 1308px; } .grid_12 { width: 1428px; }
-}
-
-/* M 864–1151px — unit 72px */
-@media (max-width: 1151px) {
-  .container { width: 864px; }
-  .grid_1  { width:  60px; } .grid_2  { width:  132px; } .grid_3  { width:  204px; }
-  .grid_4  { width:  276px; } .grid_5  { width:  348px; } .grid_6  { width:  420px; }
-  .grid_7  { width:  492px; } .grid_8  { width:  564px; } .grid_9  { width:  636px; }
-  .grid_10 { width:  708px; } .grid_11 { width:  780px; } .grid_12 { width:  852px; }
-}
-
-/* S 720–863px — unit 60px */
-@media (max-width: 863px) {
-  .container { width: 720px; }
+/* M 1056–1199px — unit 60px, inner 720px (matches original exactly) */
+@media (max-width: 1199px) {
+  .container { width: 960px; }
   .grid_1  { width:  48px; } .grid_2  { width:  108px; } .grid_3  { width:  168px; }
   .grid_4  { width:  228px; } .grid_5  { width:  288px; } .grid_6  { width:  348px; }
   .grid_7  { width:  408px; } .grid_8  { width:  468px; } .grid_9  { width:  528px; }
   .grid_10 { width:  588px; } .grid_11 { width:  648px; } .grid_12 { width:  708px; }
 }
 
-/* Single column < 720px */
-@media (max-width: 719px) {
-  .container { width: 100%; padding: 0 12px; box-sizing: border-box; }
+/* Single column < 1056px */
+@media (max-width: 1055px) {
+  .container { width: 100%; padding: 0 48px; }
   [class^="grid_"] { float: none; width: 100%; margin: 0 0 12px; }
 }
 
@@ -173,17 +153,18 @@ ul, ol { list-style: none; }
 
 /* ── Site header (logo + search) ── */
 #site-header { padding: 12px 0; }
-#site-header .container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
 #site-logo { display: inline-flex; align-items: center; }
 #site-logo:hover { opacity: 0.8; text-decoration: none; }
 
+#site-header-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
 #header-search { display: flex; align-items: center; gap: 6px; }
-#header-search input[type="text"],
 #header-search input[type="search"] {
   font-family: 'Courier New', Courier, Arial, sans-serif;
   font-size: 12px;
@@ -231,8 +212,6 @@ main { border-top: 1px solid #ccc; }
   margin-top: 12px;
 }
 #magazine-header .container {
-  display: flex;
-  align-items: center;
   min-height: 68px;
   border-top: 1px solid var(--mag-color);
   padding-top: 3px;
@@ -242,21 +221,26 @@ main { border-top: 1px solid #ccc; }
   background: url('/minhacidade-header_bg.jpg') 0 0 / cover no-repeat;
   border-color: transparent;
 }
+#magazine-header .mag-logo-col {
+  display: flex;
+  align-items: center;
+  min-height: 68px;
+}
 #magazine-header .mag-logo-link {
   display: block;
   line-height: 0;
-  flex: 0 0 540px;
   margin: 2px 0 0 4px;
 }
 #magazine-header .mag-logo { max-height: 62px; width: auto; display: block; }
 
-/* Right column: ISSN + search + subnav — left-aligned at grid_9 offset */
+/* Right column: ISSN + search + subnav — aligns with article sidebar (grid_3 omega) */
 #magazine-header .mag-right {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
+  min-height: 68px;
   gap: 2px;
-  flex: 1;
 }
 #magazine-header .mag-issn {
   font-weight: bold;
@@ -269,6 +253,7 @@ main { border-top: 1px solid #ccc; }
   display: flex;
   align-items: center;
   gap: 2px;
+  width: 100%;
 }
 #magazine-header .mag-search input[type="text"] {
   font-family: 'Courier New', Courier, Arial, sans-serif;
@@ -276,7 +261,8 @@ main { border-top: 1px solid #ccc; }
   background: var(--mag-color-light);
   border: none;
   padding: 8px 4px 1px;
-  width: 168px;
+  flex: 1;
+  min-width: 0;
   height: 28px;
   outline: none;
   color: var(--mag-color);
@@ -646,8 +632,11 @@ main { border-top: 1px solid #ccc; }
 .how_to_cit .rule-four { font-size: 12px; }
 .cite-text  { font-size: 11px; color: #666; font-style: italic; }
 
+/* ── Article meta-data header row ── */
+.meta-data { margin-bottom: 8px; }
+
 /* ── Sidebar ── */
-.article-sidebar .service { color: #666; font-size: 12px; }
+.article-sidebar .service { color: #666; font-size: 12px; margin-top: 12px; }
 .article-sidebar .rule-three { font-size: 12px; }
 .article-sidebar .rule-three .info { font-weight: normal; }
 .article-sidebar .rule-three .info a { color: inherit; font-size: 12px; }

@@ -65,24 +65,25 @@ const isPesquisa = Astro.url.pathname.startsWith('/pesquisa');
     <link rel="sitemap" href="/sitemap-index.xml" />
   </head>
   <body data-magazine={magazine ?? undefined}>
+  <div class="container">
 
     <!-- Universal black top bar -->
     <div id="universal-header">
-      <div class="container">
-        <nav class="nav-section">
-          <a href="/revistas" class={isRevistas ? 'active' : undefined}>revistas</a>
-          <a href="/pesquisa" class={isPesquisa ? 'active' : undefined}>pesquisa</a>
-          <a href="/sobre">sobre</a>
-        </nav>
-      </div>
+      <nav class="nav-section">
+        <a href="/revistas" class={isRevistas ? 'active' : undefined}>revistas</a>
+        <a href="/pesquisa" class={isPesquisa ? 'active' : undefined}>pesquisa</a>
+        <a href="/sobre">sobre</a>
+      </nav>
     </div>
 
     <!-- Main logo + search header -->
-    <div id="site-header">
-      <div class="container">
+    <div id="site-header" class="clearfix">
+      <div class="grid_8 alpha">
         <a href="/revistas" id="site-logo">
           <img src="/vitruvius-logo.png" alt="Vitruvius" width="241" height="56" />
         </a>
+      </div>
+      <div class="grid_4 omega" id="site-header-right">
         <form id="header-search" action="/pesquisa" method="get" role="search">
           <input type="search" name="q" value={searchQ} placeholder="buscar artigos…" />
           <button type="submit">buscar</button>
@@ -92,26 +93,24 @@ const isPesquisa = Astro.url.pathname.startsWith('/pesquisa');
 
     <!-- Revistas nav bar (always visible) -->
     <div id="revistas-nav">
-      <div class="container">
-        <div class="rule-one">
-          <a href="/revistas">revistas</a>
-        </div>
-        <ul class="rn-menu">
-          <li><a href="/revistas/browse/arquitextos">arquitextos</a></li>
-          <li><a href="/revistas/browse/arquiteturismo">arquiteturismo</a></li>
-          <li><a href="/revistas/browse/drops">drops</a></li>
-          <li><a href="/revistas/browse/minhacidade">minha cidade</a></li>
-          <li><a href="/revistas/browse/entrevista">entrevista</a></li>
-          <li><a href="/revistas/browse/projetos">projetos</a></li>
-          <li><a href="/revistas/browse/resenhasonline">resenhas online</a></li>
-        </ul>
+      <div class="rule-one">
+        <a href="/revistas">revistas</a>
       </div>
+      <ul class="rn-menu">
+        <li><a href="/revistas/browse/arquitextos">arquitextos</a></li>
+        <li><a href="/revistas/browse/arquiteturismo">arquiteturismo</a></li>
+        <li><a href="/revistas/browse/drops">drops</a></li>
+        <li><a href="/revistas/browse/minhacidade">minha cidade</a></li>
+        <li><a href="/revistas/browse/entrevista">entrevista</a></li>
+        <li><a href="/revistas/browse/projetos">projetos</a></li>
+        <li><a href="/revistas/browse/resenhasonline">resenhas online</a></li>
+      </ul>
     </div>
 
     <!-- Magazine header with logo (only on magazine-scoped pages) -->
     {magazine && (
-      <div id="magazine-header" data-mag={magazine}>
-        <div class="container">
+      <div id="magazine-header" data-mag={magazine} class="clearfix">
+        <div class="grid_8 alpha mag-logo-col">
           <a href={`/revistas/browse/${magazine}`} class="mag-logo-link">
             <img
               src={`/${magazine}-logo.png`}
@@ -119,38 +118,38 @@ const isPesquisa = Astro.url.pathname.startsWith('/pesquisa');
               class="mag-logo"
             />
           </a>
-          <div class="mag-right">
-            {magIssn && (
-              <span class="mag-issn">{magLabel} ISSN {magIssn}</span>
-            )}
-            <form class="mag-search" action="/pesquisa" method="get" role="search">
-              <input type="hidden" name="magazine" value={magazine} />
-              <input type="text" name="q" placeholder={`buscar em ${magLabel ?? magazine}`} />
-              <button type="submit">ok</button>
-            </form>
-            <nav class="mag-subnav">
-              <ul>
-                <li>
-                  <a
-                    href={`/revistas/arquivo/${magazine}`}
-                    class={Astro.url.pathname === `/revistas/arquivo/${magazine}` ? 'active' : undefined}
-                  >arquivo</a>
-                </li>
-                <li>
-                  <a
-                    href={`/revistas/expediente/${magazine}`}
-                    class={Astro.url.pathname === `/revistas/expediente/${magazine}` ? 'active' : undefined}
-                  >expediente</a>
-                </li>
-                <li>
-                  <a
-                    href={`/revistas/normas/${magazine}`}
-                    class={Astro.url.pathname === `/revistas/normas/${magazine}` ? 'active' : undefined}
-                  >normas</a>
-                </li>
-              </ul>
-            </nav>
-          </div>
+        </div>
+        <div class="grid_4 omega mag-right">
+          {magIssn && (
+            <span class="mag-issn">{magLabel} ISSN {magIssn}</span>
+          )}
+          <form class="mag-search" action="/pesquisa" method="get" role="search">
+            <input type="hidden" name="magazine" value={magazine} />
+            <input type="text" name="q" placeholder={`buscar em ${magLabel ?? magazine}`} />
+            <button type="submit">ok</button>
+          </form>
+          <nav class="mag-subnav">
+            <ul>
+              <li>
+                <a
+                  href={`/revistas/arquivo/${magazine}`}
+                  class={Astro.url.pathname === `/revistas/arquivo/${magazine}` ? 'active' : undefined}
+                >arquivo</a>
+              </li>
+              <li>
+                <a
+                  href={`/revistas/expediente/${magazine}`}
+                  class={Astro.url.pathname === `/revistas/expediente/${magazine}` ? 'active' : undefined}
+                >expediente</a>
+              </li>
+              <li>
+                <a
+                  href={`/revistas/normas/${magazine}`}
+                  class={Astro.url.pathname === `/revistas/normas/${magazine}` ? 'active' : undefined}
+                >normas</a>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
     )}
@@ -160,34 +159,34 @@ const isPesquisa = Astro.url.pathname.startsWith('/pesquisa');
     </main>
 
     <div id="site-footer">
-      <div class="container">
-        <div class="footer-col">
-          <div class="footer-brand">vitruvius</div>
-          <p>Publicações de arquitetura,<br />urbanismo e design.</p>
-          <p style="margin-top:8px;color:#555;">
-            © 2000–{new Date().getFullYear()} Vitruvius
-          </p>
-        </div>
-        <div class="footer-col">
-          <h4>revistas</h4>
-          <ul>
-            <li><a href="/revistas/browse/arquitextos">arquitextos</a></li>
-            <li><a href="/revistas/browse/arquiteturismo">arquiteturismo</a></li>
-            <li><a href="/revistas/browse/drops">drops</a></li>
-            <li><a href="/revistas/browse/minhacidade">minha cidade</a></li>
-            <li><a href="/revistas/browse/entrevista">entrevista</a></li>
-            <li><a href="/revistas/browse/projetos">projetos</a></li>
-            <li><a href="/revistas/browse/resenhasonline">resenhas online</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4>vitruvius</h4>
-          <ul>
-            <li><a href="/pesquisa">pesquisa</a></li>
-            <li><a href="/sobre">sobre</a></li>
-          </ul>
-        </div>
+      <div class="footer-col">
+        <div class="footer-brand">vitruvius</div>
+        <p>Publicações de arquitetura,<br />urbanismo e design.</p>
+        <p style="margin-top:8px;color:#555;">
+          © 2000–{new Date().getFullYear()} Vitruvius
+        </p>
+      </div>
+      <div class="footer-col">
+        <h4>revistas</h4>
+        <ul>
+          <li><a href="/revistas/browse/arquitextos">arquitextos</a></li>
+          <li><a href="/revistas/browse/arquiteturismo">arquiteturismo</a></li>
+          <li><a href="/revistas/browse/drops">drops</a></li>
+          <li><a href="/revistas/browse/minhacidade">minha cidade</a></li>
+          <li><a href="/revistas/browse/entrevista">entrevista</a></li>
+          <li><a href="/revistas/browse/projetos">projetos</a></li>
+          <li><a href="/revistas/browse/resenhasonline">resenhas online</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>vitruvius</h4>
+        <ul>
+          <li><a href="/pesquisa">pesquisa</a></li>
+          <li><a href="/sobre">sobre</a></li>
+        </ul>
       </div>
     </div>
+
+  </div><!-- /.container -->
   </body>
 </html>

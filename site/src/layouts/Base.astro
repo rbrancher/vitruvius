@@ -45,6 +45,7 @@ const magIssn = magazine ? (ISSN[magazine] ?? null) : null;
 
 const isRevistas = Astro.url.pathname.startsWith('/revistas');
 const isPesquisa = Astro.url.pathname.startsWith('/pesquisa');
+const isNumeros  = Astro.url.pathname === '/numeros';
 ---
 
 <!doctype html>

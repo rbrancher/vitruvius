@@ -1,0 +1,608 @@
+---
+import Base from '../layouts/Base.astro';
+import { getDb } from '../lib/db';
+
+// ── magazine metadata (static) ────────────────────────────────────────────────
+
+const MAG_IDS = [1,2,3,4,5,6,7] as const;
+const MAG_NAMES: Record<number,string> = {
+  1:'arquitextos', 2:'arquiteturismo', 3:'drops',
+  4:'minha cidade', 5:'entrevista', 6:'projetos', 7:'resenhas online',
+};
+const MAG_COLORS: Record<number,string> = {
+  1:'#CC0000', 2:'#F89820', 3:'#1C3664',
+  4:'#000000', 5:'#0598CD', 6:'#673466', 7:'#009245',
+};
+
+// ── live DB queries ───────────────────────────────────────────────────────────
+
+const db = getDb();
+
+// Totals
+const totalArticles = (db.prepare('SELECT COUNT(*) as n FROM articles WHERE status=2').get() as any).n as number;
+const totalAuthors  = (db.prepare('SELECT COUNT(DISTINCT author_id) as n FROM articles WHERE status=2 AND author_id IS NOT NULL').get() as any).n as number;
+const totalImages   = (db.prepare('SELECT COUNT(*) as n FROM images').get() as any).n as number;
+const totalEditions = (db.prepare('SELECT COUNT(*) as n FROM editions').get() as any).n as number;
+
+// Articles per year per magazine (edition idx year prefix: '21.xxx' → 2021)
+const rawByYear = db.prepare(`
+  SELECT a.magazine_id as mag_id,
+    CAST(SUBSTR(e.idx, 1, INSTR(e.idx,'.')-1) AS INTEGER) + 2000 as yr,
+    COUNT(*) as cnt
+  FROM articles a JOIN editions e ON a.edition_id = e.id
+  WHERE a.status = '2'
+  GROUP BY a.magazine_id, yr
+  ORDER BY yr, a.magazine_id
+`).all() as {mag_id:number; yr:number; cnt:number}[];
+
+// Year range from data
+const allYears = [...new Set(rawByYear.map(r => r.yr))].sort();
+const YEARS = allYears;
+
+// Build year→mag→count map
+const yearMap = new Map<number, Map<number,number>>();
+for (const y of YEARS) yearMap.set(y, new Map());
+for (const r of rawByYear) yearMap.get(r.yr)?.set(r.mag_id, r.cnt);
+
+const yearTotals = YEARS.map(y => Array.from(yearMap.get(y)!.values()).reduce((s,n)=>s+n,0));
+const maxTotal   = Math.max(...yearTotals);
+
+// Top 10 authors
+const topAuthorsRaw = db.prepare(`
+  SELECT au.firstname || ' ' || au.lastname as name, au.slug,
+    COUNT(*) as articles,
+    COUNT(DISTINCT a.magazine_id) as mags,
+    MIN(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as first_yr,
+    MAX(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as last_yr
+  FROM articles a
+  JOIN authors au ON a.author_id = au.id
+  JOIN editions e ON a.edition_id = e.id
+  WHERE a.status = '2'
+  GROUP BY a.author_id
+  ORDER BY articles DESC
+  LIMIT 10
+`).all() as {name:string; slug:string; articles:number; mags:number; first_yr:number; last_yr:number}[];
+
+// Per-author per-magazine breakdown for those 10
+const slugList = topAuthorsRaw.map(a => a.slug);
+const authorMagRaw = db.prepare(`
+  SELECT au.slug, a.magazine_id, COUNT(*) as cnt
+  FROM articles a JOIN authors au ON a.author_id = au.id
+  WHERE a.status = '2' AND au.slug IN (${slugList.map(()=>'?').join(',')})
+  GROUP BY au.slug, a.magazine_id
+`).all(...slugList) as {slug:string; magazine_id:number; cnt:number}[];
+
+// Magazine lifespans
+const magSpanRaw = db.prepare(`
+  SELECT a.magazine_id,
+    MIN(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as start_yr,
+    MAX(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as end_yr
+  FROM articles a JOIN editions e ON a.edition_id = e.id
+  WHERE a.status = '2'
+  GROUP BY a.magazine_id
+`).all() as {magazine_id:number; start_yr:number; end_yr:number}[];
+
+// Authors who covered all 7 magazines
+const allMagAuthors = db.prepare(`
+  SELECT au.firstname || ' ' || au.lastname as name, au.slug,
+    COUNT(*) as articles,
+    MIN(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as first_yr,
+    MAX(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as last_yr
+  FROM articles a
+  JOIN authors au ON a.author_id = au.id
+  JOIN editions e ON a.edition_id = e.id
+  WHERE a.status = '2'
+  GROUP BY a.author_id
+  HAVING COUNT(DISTINCT a.magazine_id) = 7
+  ORDER BY articles DESC
+`).all() as {name:string; slug:string; articles:number; first_yr:number; last_yr:number}[];
+
+// Peak year
+const peakYr = YEARS[yearTotals.indexOf(maxTotal)];
+
+// One-hit wonders
+const oneHitCount = (db.prepare(`
+  SELECT COUNT(*) as n FROM (
+    SELECT author_id FROM articles WHERE status='2' AND author_id IS NOT NULL
+    GROUP BY author_id HAVING COUNT(*)=1
+  )
+`).get() as any).n as number;
+const oneHitPct = Math.round(oneHitCount / totalAuthors * 100);
+
+// ── derived chart data ────────────────────────────────────────────────────────
+
+// Build slug → mag_id → count map
+const authorMagMap = new Map<string, Map<number,number>>();
+for (const r of authorMagRaw) {
+  if (!authorMagMap.has(r.slug)) authorMagMap.set(r.slug, new Map());
+  authorMagMap.get(r.slug)!.set(r.magazine_id, r.cnt);
+}
+
+const topAuthors = topAuthorsRaw;
+const maxArticles = topAuthors[0].articles;
+
+// Magazine lifespan display
+const magSpans = MAG_IDS.map(id => {
+  const row = magSpanRaw.find(r => r.magazine_id === id);
+  return { id, name: MAG_NAMES[id], start: row?.start_yr ?? 2001, end: row?.end_yr ?? 2001, color: MAG_COLORS[id] };
+});
+const SPAN_START = Math.min(...magSpans.map(m => m.start));
+const SPAN_END   = Math.max(...magSpans.map(m => m.end));
+
+// ── stacked bar chart geometry ────────────────────────────────────────────────
+
+const SVG_W = 840;
+const SVG_H = 320;
+const CHART_X = 44;
+const CHART_Y = 10;
+const CHART_W = SVG_W - CHART_X - 10;
+const CHART_H = SVG_H - 50;
+const BAR_SLOT = CHART_W / YEARS.length;
+const BAR_W    = BAR_SLOT * 0.72;
+const BAR_PAD  = (BAR_SLOT - BAR_W) / 2;
+const Y_SCALE  = CHART_H / (maxTotal * 1.05);
+
+const barSegments = YEARS.map((yr, i) => {
+  const x = CHART_X + i * BAR_SLOT + BAR_PAD;
+  let cumY = 0;
+  const segs = MAG_IDS.map(mid => {
+    const cnt = yearMap.get(yr)?.get(mid) ?? 0;
+    const h = cnt * Y_SCALE;
+    const seg = { x, y: CHART_Y + CHART_H - cumY - h, w: BAR_W, h, cnt, color: MAG_COLORS[mid], mid };
+    cumY += h;
+    return seg;
+  }).filter(s => s.h > 0);
+  return { yr, x, total: yearTotals[i], segs };
+});
+
+const gridLines = [100, 200, 300, 400].filter(v => v <= maxTotal);
+
+// ── author bar chart geometry ─────────────────────────────────────────────────
+
+const A_SVG_W   = 700;
+const A_BAR_H   = 28;
+const A_GAP     = 10;
+const A_LABEL   = 180;
+const A_BAR_AREA = A_SVG_W - A_LABEL - 60;
+const A_SVG_H   = topAuthors.length * (A_BAR_H + A_GAP) + 20;
+
+// ── lifespan chart geometry ───────────────────────────────────────────────────
+
+const SPAN_YEARS = SPAN_END - SPAN_START;
+const SPAN_W     = 500;
+const SPAN_LABEL = 130;
+const SPAN_BAR_H = 20;
+const SPAN_GAP   = 12;
+const SPAN_SVG_W = SPAN_LABEL + SPAN_W + 50;
+const SPAN_SVG_H = magSpans.length * (SPAN_BAR_H + SPAN_GAP) + 30;
+---
+
+<Base title="Vitruvius em números" description="22 anos de arquitetura, urbanismo e design: 6.647 artigos, 2.345 autores, 109.957 imagens.">
+
+<style>
+  /* ── page layout ── */
+  .stats-page { padding: 32px 0 64px; }
+  .stats-page h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -.02em; margin: 0 0 4px; }
+  .stats-page .subtitle { color: #666; font-size: 1rem; margin: 0 0 48px; }
+
+  /* ── hero row ── */
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-top: 3px solid #111;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 56px;
+  }
+  .hero-stat {
+    padding: 24px 20px 20px;
+    border-right: 1px solid #ddd;
+  }
+  .hero-stat:last-child { border-right: none; }
+  .hero-stat__number {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #111;
+    letter-spacing: -.03em;
+  }
+  .hero-stat__label {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #888;
+    margin-top: 6px;
+  }
+
+  /* ── section headers ── */
+  .stats-section { margin-bottom: 56px; }
+  .stats-section h2 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    font-weight: 600;
+    color: #111;
+    border-top: 2px solid #111;
+    padding-top: 10px;
+    margin: 0 0 24px;
+  }
+
+  /* ── chart container ── */
+  .chart-wrap { overflow-x: auto; }
+  .chart-wrap svg { display: block; width: 100%; max-width: 840px; }
+
+  /* ── mag legend ── */
+  .mag-legend {
+    display: flex; flex-wrap: wrap; gap: 8px 20px;
+    margin-top: 14px;
+    font-size: .78rem;
+  }
+  .mag-legend__item { display: flex; align-items: center; gap: 6px; }
+  .mag-legend__swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── author bars ── */
+  .author-bar-wrap { overflow-x: auto; }
+  .author-bar-wrap svg { display: block; width: 100%; max-width: 700px; }
+
+  /* ── spotlight box ── */
+  .spotlight {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    background: #111;
+    color: #fff;
+    padding: 36px 40px;
+    margin-bottom: 56px;
+  }
+  .spotlight__heading {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: #888;
+    margin: 0 0 8px;
+  }
+  .spotlight__name {
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    margin: 0 0 16px;
+  }
+  .spotlight__name a { color: #fff; text-decoration: none; border-bottom: 2px solid #c44b00; }
+  .spotlight__name a:hover { color: #ffcc99; }
+  .spotlight__stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+  .spotlight__stat-n { font-size: 2rem; font-weight: 700; color: #f5c040; line-height: 1; }
+  .spotlight__stat-l { font-size: .78rem; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .spotlight__right { display: flex; flex-direction: column; justify-content: center; }
+  .spotlight__quote {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #ccc;
+    border-left: 3px solid #c44b00;
+    padding-left: 16px;
+    margin: 0;
+  }
+
+  /* ── one-hit wonders ── */
+  .one-hit {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: center;
+    margin-bottom: 56px;
+    padding: 32px 0;
+    border-top: 2px solid #111;
+    border-bottom: 1px solid #ddd;
+  }
+  .one-hit__big { font-size: 5rem; font-weight: 700; letter-spacing: -.04em; line-height: 1; color: #111; }
+  .one-hit__big span { color: #c44b00; }
+  .one-hit__label { font-size: 1.1rem; color: #444; margin-top: 8px; line-height: 1.5; }
+  .one-hit__sub { font-size: .85rem; color: #888; margin-top: 6px; }
+
+  /* ── span chart ── */
+  .span-wrap svg { display: block; width: 100%; max-width: 680px; }
+
+  /* ── two-col layout for lower sections ── */
+  .stats-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 56px;
+  }
+
+  /* ── responsive ── */
+  @media (max-width: 720px) {
+    .hero-grid { grid-template-columns: 1fr 1fr; }
+    .spotlight, .one-hit, .stats-two-col { grid-template-columns: 1fr; }
+    .stats-page h1 { font-size: 1.6rem; }
+    .hero-stat__number { font-size: 2rem; }
+    .spotlight__name { font-size: 1.8rem; }
+    .one-hit__big { font-size: 3.5rem; }
+  }
+</style>
+
+<div class="stats-page">
+
+  <!-- ── Page title ── -->
+  <h1>vitruvius em números</h1>
+  <p class="subtitle">{SPAN_END - SPAN_START + 1} anos de arquitetura, urbanismo e design registrados em texto e imagem</p>
+
+  <!-- ── Hero stats ── -->
+  <div class="hero-grid">
+    <div class="hero-stat">
+      <div class="hero-stat__number">{totalArticles.toLocaleString('pt-BR')}</div>
+      <div class="hero-stat__label">artigos publicados</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat__number">{totalAuthors.toLocaleString('pt-BR')}</div>
+      <div class="hero-stat__label">autores distintos</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat__number">{totalImages.toLocaleString('pt-BR')}</div>
+      <div class="hero-stat__label">imagens no arquivo</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat__number">{totalEditions.toLocaleString('pt-BR')}</div>
+      <div class="hero-stat__label">edições · 7 revistas</div>
+    </div>
+  </div>
+
+  <!-- ── Stacked bar chart ── -->
+  <div class="stats-section">
+    <h2>artigos por ano</h2>
+    <div class="chart-wrap">
+      <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} xmlns="http://www.w3.org/2000/svg" aria-label="Artigos por ano por revista">
+
+        <!-- gridlines -->
+        {gridLines.map(v => {
+          const y = CHART_Y + CHART_H - v * Y_SCALE;
+          return (
+            <>
+              <line x1={CHART_X} y1={y} x2={SVG_W-10} y2={y} stroke="#e8e8e8" stroke-width="1" />
+              <text x={CHART_X-4} y={y+4} text-anchor="end" font-size="11" fill="#999">{v}</text>
+            </>
+          );
+        })}
+
+        <!-- peak year annotation -->
+        {(() => {
+          const peakIdx = yearTotals.indexOf(maxTotal);
+          const px = CHART_X + peakIdx * BAR_SLOT + BAR_SLOT/2;
+          const py = CHART_Y + CHART_H - maxTotal * Y_SCALE - 8;
+          return (
+            <>
+              <line x1={px} y1={py+2} x2={px} y2={py-18} stroke="#c44b00" stroke-width="1.5" stroke-dasharray="3,2"/>
+              <text x={px} y={py-22} text-anchor="middle" font-size="11" fill="#c44b00" font-weight="600">{maxTotal}</text>
+              <text x={px} y={py-10} text-anchor="middle" font-size="10" fill="#c44b00">pico</text>
+            </>
+          );
+        })()}
+
+        <!-- bars -->
+        {barSegments.map(({yr, x, segs}, i) => (
+          <>
+            {segs.map(s => (
+              <rect x={s.x} y={s.y} width={s.w} height={s.h} fill={s.color}>
+                <title>{MAG_NAMES[s.mid]} — {yr}: {s.cnt}</title>
+              </rect>
+            ))}
+            <text
+              x={x + BAR_W/2}
+              y={CHART_Y + CHART_H + 14}
+              text-anchor="middle"
+              font-size="10"
+              fill={yr % 2 === 1 ? '#999' : '#555'}
+              transform={`rotate(-45 ${x + BAR_W/2} ${CHART_Y + CHART_H + 14})`}
+            >{yr}</text>
+          </>
+        ))}
+
+        <!-- baseline -->
+        <line x1={CHART_X} y1={CHART_Y+CHART_H} x2={SVG_W-10} y2={CHART_Y+CHART_H} stroke="#ccc" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- legend -->
+    <div class="mag-legend">
+      {MAG_IDS.map(mid => (
+        <span class="mag-legend__item">
+          <span class="mag-legend__swatch" style={`background:${MAG_COLORS[mid]}`}></span>
+          {MAG_NAMES[mid]}
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <!-- ── Abilio Guerra spotlight ── -->
+  <div class="spotlight">
+    <div class="spotlight__left">
+      <p class="spotlight__heading">o autor mais prolífico</p>
+      <h2 class="spotlight__name">
+        <a href="/autor/abilio-guerra">Abilio Guerra</a>
+      </h2>
+      <div class="spotlight__stats">
+        <div>
+          <div class="spotlight__stat-n">270</div>
+          <div class="spotlight__stat-l">artigos</div>
+        </div>
+        <div>
+          <div class="spotlight__stat-n">21</div>
+          <div class="spotlight__stat-l">anos de presença</div>
+        </div>
+        <div>
+          <div class="spotlight__stat-n">7/7</div>
+          <div class="spotlight__stat-l">revistas</div>
+        </div>
+        <div>
+          <div class="spotlight__stat-n">23</div>
+          <div class="spotlight__stat-l">temas cobertos</div>
+        </div>
+      </div>
+    </div>
+    <div class="spotlight__right">
+      <p class="spotlight__quote">
+        De 2001 a 2021, não houve um único ano em que Abilio Guerra deixou de publicar no Vitruvius.
+        Com 270 artigos em todas as 7 revistas, é o autor que mais amplamente mapeou
+        a arquitetura e o urbanismo brasileiro contemporâneo.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── One-hit wonders ── -->
+  <div class="one-hit">
+    <div>
+      <div class="one-hit__big"><span>{oneHitPct}%</span></div>
+      <div class="one-hit__label">dos autores publicou <strong>apenas uma vez</strong> no Vitruvius</div>
+      <div class="one-hit__sub">{oneHitCount.toLocaleString('pt-BR')} de {totalAuthors.toLocaleString('pt-BR')} autores — presença única, contribuição permanente no arquivo</div>
+    </div>
+    <div>
+      <p style="font-size:1rem; color:#444; line-height:1.7;">
+        O Vitruvius sempre foi uma plataforma aberta. Mais de dois terços dos autores aparecem
+        uma única vez — arquitetos, professores, estudantes que registraram um projeto,
+        uma reflexão, uma obra. <br><br>
+        Os 33% restantes formam o núcleo que acompanhou décadas de produção arquitetônica brasileira
+        e ibero-americana.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Top 10 authors ── -->
+  <div class="stats-section">
+    <h2>os 10 autores mais publicados</h2>
+    <div class="author-bar-wrap">
+      <svg viewBox={`0 0 ${A_SVG_W} ${A_SVG_H}`} xmlns="http://www.w3.org/2000/svg" aria-label="Top 10 autores por número de artigos por revista">
+        {topAuthors.map((au, i) => {
+          const y = i * (A_BAR_H + A_GAP) + 10;
+          const totalBw = (au.articles / maxArticles) * A_BAR_AREA;
+          const magCounts = authorMagMap.get(au.slug)!;
+          // Build stacked segments in magazine order
+          let cumX = 0;
+          const segs = MAG_IDS.map(mid => {
+            const cnt = magCounts.get(mid) ?? 0;
+            if (cnt === 0) return null;
+            const w = (cnt / au.articles) * totalBw;
+            const seg = { x: A_LABEL + cumX, w, cnt, mid, color: MAG_COLORS[mid] };
+            cumX += w;
+            return seg;
+          }).filter(Boolean);
+          return (
+            <>
+              <text x={A_LABEL - 8} y={y + A_BAR_H/2 + 4} text-anchor="end" font-size="13" fill="#222">
+                {au.name}
+              </text>
+              {segs.map(s => (
+                <rect x={s!.x} y={y} width={s!.w} height={A_BAR_H} fill={s!.color} rx="0">
+                  <title>{MAG_NAMES[s!.mid]}: {s!.cnt}</title>
+                </rect>
+              ))}
+              <text x={A_LABEL + totalBw + 8} y={y + A_BAR_H/2 + 4} font-size="13" fill="#555">
+                {au.articles}
+              </text>
+              <text x={A_LABEL + totalBw + 40} y={y + A_BAR_H/2 + 4} font-size="11" fill="#aaa">
+                {au.first_yr}–{au.last_yr}
+              </text>
+            </>
+          );
+        })}
+      </svg>
+    </div>
+    <div class="mag-legend" style="margin-top:10px;">
+      {MAG_IDS.map(mid => (
+        <span class="mag-legend__item">
+          <span class="mag-legend__swatch" style={`background:${MAG_COLORS[mid]}`}></span>
+          {MAG_NAMES[mid]}
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <!-- ── Two-col: magazine lifespans + cross-magazine authors ── -->
+  <div class="stats-two-col">
+
+    <!-- Magazine lifespans -->
+    <div class="stats-section" style="margin-bottom:0">
+      <h2>ciclo de vida das revistas</h2>
+      <div class="span-wrap">
+        <svg viewBox={`0 0 ${SPAN_SVG_W} ${SPAN_SVG_H}`} xmlns="http://www.w3.org/2000/svg" aria-label="Ciclo de vida das revistas">
+          <!-- year tick marks -->
+          {[2001,2006,2011,2016,2021].map(yr => {
+            const x = SPAN_LABEL + ((yr - SPAN_START) / SPAN_YEARS) * SPAN_W;
+            return (
+              <>
+                <line x1={x} y1={0} x2={x} y2={SPAN_SVG_H - 20} stroke="#eee" stroke-width="1"/>
+                <text x={x} y={SPAN_SVG_H - 6} text-anchor="middle" font-size="10" fill="#aaa">{yr}</text>
+              </>
+            );
+          })}
+
+          {magSpans.map((m, i) => {
+            const y  = i * (SPAN_BAR_H + SPAN_GAP) + 5;
+            const x1 = SPAN_LABEL + ((m.start - SPAN_START) / SPAN_YEARS) * SPAN_W;
+            const x2 = SPAN_LABEL + ((m.end   - SPAN_START) / SPAN_YEARS) * SPAN_W + (SPAN_W / SPAN_YEARS);
+            const active = m.end === SPAN_END;
+            return (
+              <>
+                <text x={SPAN_LABEL - 6} y={y + SPAN_BAR_H/2 + 4} text-anchor="end" font-size="11" fill="#444">{m.name}</text>
+                <rect x={x1} y={y} width={x2-x1} height={SPAN_BAR_H} fill={m.color} rx="2" opacity={active ? '1' : '0.55'}/>
+                {!active && (
+                  <text x={x2 + 4} y={y + SPAN_BAR_H/2 + 4} font-size="10" fill="#c44b00">{m.end}</text>
+                )}
+              </>
+            );
+          })}
+        </svg>
+      </div>
+      <p style="font-size:.8rem; color:#888; margin-top:10px; line-height:1.5;">
+        Arquiteturismo encerrou em 2014. Resenhas online reduziu drasticamente após 2019.
+        Barras mais claras indicam revistas encerradas.
+      </p>
+    </div>
+
+    <!-- Cross-magazine authors -->
+    <div class="stats-section" style="margin-bottom:0">
+      <h2>os que cobriram tudo</h2>
+      <p style="font-size:.9rem; color:#555; line-height:1.6; margin-bottom:20px;">
+        Apenas {allMagAuthors.length} {allMagAuthors.length === 1 ? 'autor publicou' : 'autores publicaram'} em todas as 7 revistas do Vitruvius.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        {allMagAuthors.map((au, i) => (
+          <div style="display:flex; align-items:baseline; gap:12px; padding-bottom:12px; border-bottom:1px solid #eee;">
+            <span style="font-size:1.8rem; font-weight:700; color:#ddd; min-width:28px;">{i+1}</span>
+            <div>
+              <a href={`/autor/${au.slug}`} style="font-weight:600; color:#111; font-size:.95rem;">{au.name}</a>
+              <div style="font-size:.8rem; color:#888; margin-top:2px;">{au.articles} artigos · {au.first_yr}–{au.last_yr}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p style="font-size:.8rem; color:#aaa; margin-top:16px; line-height:1.5;">
+        Das {totalAuthors.toLocaleString('pt-BR')} vozes do arquivo, apenas {allMagAuthors.length === 1 ? 'esta' : 'estas'} transitaram por todas as revistas —
+        de arquitextos às resenhas, do projeto ao urbanismo cotidiano.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ── Production peaks ── -->
+  <div class="stats-section">
+    <h2>curiosidades do arquivo</h2>
+    <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:0; border:1px solid #ddd;">
+      {[
+        {n: String(peakYr), l:'ano mais prolífico', sub:`${maxTotal.toLocaleString('pt-BR')} artigos em um único ano`},
+        {n:`1:${(totalArticles/totalAuthors).toFixed(2).replace('.',',')}`, l:'média por autor', sub:'poucos escrevem muito, muitos escrevem pouco'},
+        {n: String(allMagAuthors.length), l:'autores onipresentes', sub:'únicas vozes em todas as 7 revistas'},
+      ].map((item, i) => (
+        <div style={`padding:24px 20px; ${i < 2 ? 'border-right:1px solid #ddd;' : ''}`}>
+          <div style="font-size:2.2rem; font-weight:700; letter-spacing:-.03em; color:#111;">{item.n}</div>
+          <div style="font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:#888; margin-top:4px;">{item.l}</div>
+          <div style="font-size:.82rem; color:#666; margin-top:8px; line-height:1.4;">{item.sub}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+</div>
+
+</Base>

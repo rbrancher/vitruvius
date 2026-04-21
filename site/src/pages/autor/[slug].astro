@@ -1,0 +1,100 @@
+---
+import Base from '../../layouts/Base.astro';
+import {
+  getAuthorsWithArticles,
+  getAuthorBySlug,
+  getArticlesByAuthor,
+  authorFullName,
+} from '../../lib/db';
+
+export async function getStaticPaths() {
+  return getAuthorsWithArticles().map(a => ({ params: { slug: a.slug } }));
+}
+
+const { slug } = Astro.params;
+const author = getAuthorBySlug(slug)!;
+const articles = getArticlesByAuthor(author.id);
+
+const fullName = authorFullName(author);
+
+// Group articles by magazine
+const byMag: Record<string, typeof articles> = {};
+for (const a of articles) {
+  if (!byMag[a.magazine_title]) byMag[a.magazine_title] = [];
+  byMag[a.magazine_title].push(a);
+}
+
+const LABELS: Record<string, string> = {
+  arquitextos:    'arquitextos',
+  arquiteturismo: 'arquiteturismo',
+  drops:          'drops',
+  minhacidade:    'minha cidade',
+  entrevista:     'entrevista',
+  projetos:       'projetos',
+  resenhasonline: 'resenhas online',
+};
+---
+
+<Base
+  title={fullName}
+  description={`Artigos de ${fullName}${author.institution ? ` — ${author.institution}` : ''} — Vitruvius`}
+>
+  <div class="container" style="padding-top:12px;padding-bottom:32px;">
+    <nav class="breadcrumb">
+      <a href="/revistas">revistas</a>
+      <span class="sep">›</span>
+      <a href="/pesquisa">pesquisa</a>
+      <span class="sep">›</span>
+      <span>{fullName}</span>
+    </nav>
+
+    <div class="rule-one">{fullName}</div>
+
+    <!-- Author metadata -->
+    <div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #eee;">
+      {author.biography && author.biography.trim() && (
+        <p style="font-size:12px;line-height:16px;color:#333;margin-bottom:8px;max-width:528px;">
+          {author.biography}
+        </p>
+      )}
+      {author.institution && (
+        <div style="font-size:12px;margin-bottom:4px;">
+          <strong>instituição</strong> {author.institution}
+        </div>
+      )}
+      {author.degree && (
+        <div style="font-size:12px;margin-bottom:4px;">
+          <strong>formação</strong> {author.degree}
+        </div>
+      )}
+      <div style="font-size:12px;color:#666;">
+        <strong>{articles.length}</strong> artigo{articles.length !== 1 ? 's' : ''} publicado{articles.length !== 1 ? 's' : ''}
+      </div>
+    </div>
+
+    <!-- Articles grouped by magazine -->
+    {Object.entries(byMag).map(([magTitle, magArticles]) => (
+      <div style="margin-bottom:24px;" data-magazine={magTitle}>
+        <div class="rule-three">
+          <a href={`/revistas/browse/${magTitle}`} style="color:inherit;">
+            {LABELS[magTitle] ?? magTitle}
+          </a>
+          <span style="font-weight:normal;color:#666;font-size:11px;margin-left:8px;">
+            {magArticles.length} artigo{magArticles.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {magArticles.map(a => (
+          <div class="article-entry">
+            <span class="entry-index">{a.edition_idx}</span>
+            <a class="entry-title"
+               href={`/revistas/read/${magTitle}/${a.edition_idx}/${a.id}`}
+               set:html={a.title} />
+            {a.subtitle && <div class="entry-subtitle" set:html={a.subtitle} />}
+            {a.abstract && <div class="entry-abstract" set:html={a.abstract} />}
+          </div>
+        ))}
+      </div>
+    ))}
+  </div>
+</Base>

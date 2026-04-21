@@ -1,0 +1,84 @@
+---
+import Base from '../../../layouts/Base.astro';
+import {
+  getMagazines,
+  getEditionsByMagazine,
+  getPublishedArticlesByEdition,
+  authorFullName,
+} from '../../../lib/db';
+
+export async function getStaticPaths() {
+  return getMagazines().map(mag => ({
+    params: { magazine: mag.title },
+  }));
+}
+
+const { magazine } = Astro.params;
+
+const magazines = getMagazines();
+const mag = magazines.find(m => m.title === magazine)!;
+
+const LABELS: Record<string, string> = {
+  arquitextos:    'arquitextos',
+  arquiteturismo: 'arquiteturismo',
+  drops:          'drops',
+  minhacidade:    'minha cidade',
+  entrevista:     'entrevista',
+  projetos:       'projetos',
+  resenhasonline: 'resenhas online',
+};
+const magLabel = LABELS[magazine] ?? magazine;
+
+// Editions sorted newest first (getEditionsByMagazine already returns DESC)
+const editions = getEditionsByMagazine(mag.id);
+
+// Build edition+articles pairs
+const editionData = editions.map(ed => ({
+  edition: ed,
+  articles: getPublishedArticlesByEdition(ed.id),
+}));
+---
+
+<Base title={`arquivo — ${magLabel}`} magazine={magazine}>
+  <div class="container">
+    <div class="arquivo-page" style="padding: 12px 0 36px;">
+
+      <div class="rule-one" style="margin-top: 0;">arquivo · {magLabel}</div>
+
+      {editionData.map(({ edition, articles }) => (
+        <div class="arquivo-edition">
+          <div class="rule-two rule-two--mag arquivo-edition-header">
+            <a href={`/revistas/browse/${magazine}/${edition.idx}`}>
+              edição {edition.idx}
+            </a>
+          </div>
+
+          {articles.length > 0 ? (
+            <table class="arquivo-table">
+              <tbody>
+                {articles.map(a => {
+                  const authorName = (a.author_firstname || a.author_lastname)
+                    ? authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })
+                    : null;
+                  return (
+                    <tr>
+                      <td class="at-idx">{a.idx ?? ''}</td>
+                      <td class="at-title">
+                        <a href={`/revistas/read/${magazine}/${edition.idx}/${a.id}`}
+                           set:html={a.title} />
+                      </td>
+                      <td class="at-author">{authorName ?? ''}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <p style="font-size:11px; color:#999; padding: 6px 0;">nenhum artigo publicado</p>
+          )}
+        </div>
+      ))}
+
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,255 @@
+---
+import Base from '../../../../../layouts/Base.astro';
+import ArticleGallery from '../../../../../components/ArticleGallery.astro';
+import {
+  getMagazines, getEditionsByMagazine, getPublishedArticlesByEdition,
+  getArticleWithMeta, getArticleImages, getArticlePages, getArticleTags, getArticleAbstracts,
+  authorFullName, type Image,
+} from '../../../../../lib/db';
+import { stripHtml, processArticleBody, imageUrl } from '../../../../../lib/text';
+
+export async function getStaticPaths() {
+  const paths = [];
+  for (const mag of getMagazines()) {
+    for (const ed of getEditionsByMagazine(mag.id)) {
+      for (const a of getPublishedArticlesByEdition(ed.id)) {
+        paths.push({ params: { magazine: mag.title, edition: ed.idx, id: String(a.id) } });
+      }
+    }
+  }
+  return paths;
+}
+
+const { magazine: magazineSlug, edition: editionIdx, id } = Astro.params;
+const article = getArticleWithMeta(Number(id))!;
+const images = getArticleImages(Number(id));
+const tags = getArticleTags(Number(id));
+const abstracts = getArticleAbstracts(Number(id));
+
+const imageMap = new Map<number, Image>(images.map(img => [img.id, img]));
+const bodyHtml = processArticleBody(article.text ?? article.lead, imageMap);
+const articlePages = getArticlePages(Number(id));
+const totalPages = articlePages.length + 1; // page 1 = main text, 2..N = articlepages
+
+const placeholderIds = new Set(
+  [...(article.text ?? '').matchAll(/\{--image:(\d+)--\}/g)].map(m => Number(m[1]))
+);
+const galleryImages = images.filter(img => img.is_cover || !placeholderIds.has(img.id));
+
+const plainTitle   = stripHtml(article.title) || 'Artigo';
+const plainAbstract = stripHtml(article.abstract ?? article.lead);
+
+const siblings = getPublishedArticlesByEdition(article.edition_id)
+  .filter(a => a.id !== article.id);
+
+const LABELS: Record<string, string> = {
+  arquitextos:    'arquitextos',
+  arquiteturismo: 'arquiteturismo',
+  drops:          'drops',
+  minhacidade:    'minha cidade',
+  entrevista:     'entrevista',
+  projetos:       'projetos',
+  resenhasonline: 'resenhas online',
+};
+const label = LABELS[magazineSlug] ?? magazineSlug;
+
+const ISSN: Record<string, string> = {
+  arquitextos: '1809-6298', arquiteturismo: '1982-9930', drops: '2175-6716',
+  minhacidade: '1982-9922', entrevista: '2175-6708', projetos: '2595-4245',
+  resenhasonline: '2175-6694',
+};
+
+const authorName = (article.author_firstname || article.author_lastname)
+  ? authorFullName({ firstname: article.author_firstname, lastname: article.author_lastname })
+  : null;
+
+const articleDate = article.created_at ? new Date(article.created_at * 1000) : null;
+const publishedYear = articleDate?.getFullYear() ?? null;
+
+const PT_MONTHS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const edParts = editionIdx.split('.');
+const edYear2 = edParts[0] ?? '';
+const edNum3  = edParts[1] ?? '';
+const artIdx  = article.idx ?? '00';
+const edHeaderLeft = `${edNum3}.${artIdx}${article.section ? ' ' + article.section : ''}`;
+const edHeaderRight = articleDate
+  ? `ano ${edYear2}, ${PT_MONTHS[articleDate.getMonth()]}. ${articleDate.getFullYear()}`
+  : `ed. ${editionIdx}`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ScholarlyArticle',
+  headline: plainTitle,
+  description: plainAbstract || undefined,
+  author: authorName ? { '@type': 'Person', name: authorName } : undefined,
+  isPartOf: {
+    '@type': 'Periodical',
+    name: `Vitruvius ${label}`,
+    issueNumber: editionIdx,
+  },
+  publisher: { '@type': 'Organization', name: 'Vitruvius', url: 'https://vitruvius.com.br' },
+  url: Astro.url.href,
+};
+---
+
+<Base
+  title={plainTitle}
+  description={plainAbstract || `${label} ${editionIdx} — Vitruvius`}
+  canonicalUrl={Astro.url.href}
+  magazine={magazineSlug}
+  editionIdx={editionIdx}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  {/* Redirect legacy ?page=N links to the new sub-path */}
+  {totalPages > 1 && (
+    <script define:vars={{ totalPages, basePath: `/revistas/read/${magazineSlug}/${editionIdx}/${id}` }}>
+      const p = new URLSearchParams(location.search).get('page');
+      if (p && Number(p) > 1 && Number(p) <= totalPages)
+        location.replace(`${basePath}/${p}`);
+    </script>
+  )}
+
+  <div class="container">
+
+    <!-- Edition bar: full width -->
+    <div class="rule-three rule-three--mag">
+      <a href={`/revistas/browse/${magazineSlug}/${editionIdx}`}>{edHeaderLeft}</a>
+      <span class="sep">·</span>
+      <span class="ed-info">{edHeaderRight}</span>
+    </div>
+
+    <!-- Header row -->
+    <div class="clearfix">
+      <div class="grid_9 alpha">
+        <header class="article-header">
+          <h1 set:html={article.title} />
+          {article.subtitle && <h2 set:html={article.subtitle} />}
+
+          {authorName && (
+            <div>
+              <div class="ah-author">
+                {article.author_slug
+                  ? <a href={`/autor/${article.author_slug}`}>{authorName}</a>
+                  : authorName}
+              </div>
+              {article.author_institution && (
+                <div class="ah-institution">{article.author_institution}</div>
+              )}
+            </div>
+          )}
+        </header>
+      </div>
+      <div class="grid_3 omega"></div>
+    </div>
+
+    <!-- Content row -->
+    <div class="article-page clearfix">
+
+      <div class="grid_9 alpha">
+
+        {abstracts.length > 0 && (
+          <div class="abstracts">
+            <h3 class="rule-four">sinopses</h3>
+            {abstracts.map(ab => (
+              <p><strong>{ab.label}</strong><br />{ab.abstract}</p>
+            ))}
+          </div>
+        )}
+
+        <div class="how_to_cit">
+          <h3 class="rule-four">como citar</h3>
+          <p class="cite-text">
+            {authorName ? `${authorName}. ` : ''}
+            &ldquo;<span set:html={article.title} />&rdquo;.
+            <em>Vitruvius {label}</em>, ed. {editionIdx}.{publishedYear && ` ${publishedYear}.`}
+            Disponível em: {Astro.url.href}
+          </p>
+        </div>
+
+        {galleryImages.length > 1 && (
+          <ArticleGallery images={galleryImages} />
+        )}
+
+        {totalPages > 1 && (
+          <nav class="page-nav">
+            <span class="page-nav__prev" style="color:#ccc;">← início</span>
+            <span class="page-nav__label">página 1 de {totalPages}</span>
+            <a class="page-nav__next" href={`/revistas/read/${magazineSlug}/${editionIdx}/${id}/2`}>
+              próxima página →
+            </a>
+          </nav>
+        )}
+
+        <div class="article-body" set:html={bodyHtml} />
+
+        {totalPages > 1 && (
+          <nav class="page-nav">
+            <span class="page-nav__prev" style="color:#ccc;">← início</span>
+            <span class="page-nav__label">página 1 de {totalPages}</span>
+            <a class="page-nav__next" href={`/revistas/read/${magazineSlug}/${editionIdx}/${id}/2`}>
+              próxima página →
+            </a>
+          </nav>
+        )}
+
+        {tags.length > 0 && (
+          <div class="tags" style="margin-top:16px;">
+            {tags.map(t => (
+              <a class="tag" href={`/pesquisa?tag=${t.id}`}>{t.title}</a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <!-- Sidebar: grid_3 -->
+      <div class="grid_3 omega article-sidebar">
+        <div class="service">
+
+          <div class="rule-three rule-three--mag">
+            {edHeaderLeft}
+            <span class="info">
+              {abstracts.length > 0 && (
+                <><br /><a href="javascript://" class="abstracts_trigger">sinopses</a></>
+              )}
+              <br /><a href="javascript://" class="citation_trigger">como citar</a>
+            </span>
+          </div>
+
+          <div class="rule-three rule-three--mag" style="margin-top:12px;">
+            <a href={`/revistas/browse/${magazineSlug}/${editionIdx}`}>edição {editionIdx}</a>
+          </div>
+
+          {siblings.map(s => (
+            <div class="entry">
+              <h3 class="index">{edNum3}.{s.idx}{s.section ? ` ${s.section}` : ''}</h3>
+              <h2>
+                <a href={`/revistas/read/${magazineSlug}/${editionIdx}/${s.id}`}
+                   set:html={s.title} />
+              </h2>
+              {s.subtitle && <h2 class="subtitle" set:html={s.subtitle} />}
+              {(s.author_firstname || s.author_lastname) && (
+                <h3 class="author">
+                  {authorFullName({ firstname: s.author_firstname, lastname: s.author_lastname })}
+                </h3>
+              )}
+            </div>
+          ))}
+
+        </div>
+      </div>
+
+    </div><!-- /.article-page -->
+  </div>
+
+  <script>
+    document.querySelector('.abstracts_trigger')?.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector('.abstracts')?.classList.toggle('visible');
+    });
+    document.querySelector('.citation_trigger')?.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector('.how_to_cit')?.classList.toggle('visible');
+    });
+  </script>
+</Base>

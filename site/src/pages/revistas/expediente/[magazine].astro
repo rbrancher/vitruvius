@@ -1,0 +1,216 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { getMagazines } from '../../../lib/db';
+
+export async function getStaticPaths() {
+  return getMagazines().map(mag => ({
+    params: { magazine: mag.title },
+  }));
+}
+
+const { magazine } = Astro.params;
+
+const LABELS: Record<string, string> = {
+  arquitextos:    'arquitextos',
+  arquiteturismo: 'arquiteturismo',
+  drops:          'drops',
+  minhacidade:    'minha cidade',
+  entrevista:     'entrevista',
+  projetos:       'projetos',
+  resenhasonline: 'resenhas online',
+};
+const magLabel = LABELS[magazine] ?? magazine;
+
+interface ConselhoMember { name: string; institution: string; }
+
+interface ExpedienteData {
+  description: string;
+  issn: string;
+  editors: string;
+  email: string;
+  website?: string;
+  normas?: boolean;
+  conselho?: { title: string; members: ConselhoMember[]; };
+}
+
+const NORMAS_MAGS = [
+  { slug: 'arquitextos',    label: 'em arquitextos' },
+  { slug: 'arquiteturismo', label: 'em arquiteturismo' },
+  { slug: 'drops',          label: 'em drops' },
+  { slug: 'entrevista',     label: 'em entrevista' },
+  { slug: 'minhacidade',    label: 'em minha cidade' },
+  { slug: 'resenhasonline', label: 'em resenhas online' },
+];
+
+const EXPEDIENTE: Record<string, ExpedienteData> = {
+  arquitextos: {
+    description: 'Arquitextos é um periódico online mensal, de caráter técnico-científico, com artigos sobre arquitetura, urbanismo, arte e cultura, disponibilizado na rede mundial internet pelo Vitruvius, portal especializado em arquitetura e urbanismo pela Romano Guerra Editora.',
+    issn: '1809-6298',
+    editors: 'Abilio Guerra',
+    email: 'arquitextos@vitruvius.com.br',
+    website: 'www.arquitextos.com.br',
+    normas: true,
+    conselho: {
+      title: 'Conselho Editorial / Arquitextos e Romano Guerra Editora',
+      members: [
+        { name: 'Abilio Guerra',                      institution: 'Universidade Presbiteriana Mackenzie / São Paulo SP – Brasil' },
+        { name: 'Adrián Gorelik',                     institution: 'Universidad Nacional de Quilmes / Quilmes – Argentina' },
+        { name: 'Aldo Paviani',                       institution: 'Universidade de Brasília UnB / Brasília DF – Brasil' },
+        { name: 'Alfonso Ramírez Ponce',              institution: 'Facultad de Arquitectura de la Universidad Nacional Autónoma de México UNAM / Cidade do México DF – México' },
+        { name: 'Alicia Novick',                      institution: 'Universidad de Buenos Aires FADU-UBA / Buenos Aires – Argentina' },
+        { name: 'Ana Luiza Nobre',                    institution: 'Pontifícia Universidade Católica PUC-RJ / Rio de Janeiro RJ – Brasil' },
+        { name: 'Ângelo Bucci',                       institution: 'Universidade de São Paulo USP / São Paulo SP – Brasil' },
+        { name: 'Ângelo Marcos Vieira de Arruda',     institution: 'Universidade Federal de Mato Grosso do Sul / Campo Grande MS – Brasil' },
+        { name: 'Anna Beatriz Galvão',                institution: 'Universidade Federal da Bahia UFBa / Salvador BA – Brasil' },
+        { name: 'Carlos Alberto Ferreira Martins',    institution: 'Universidade de São Paulo EESC-USP / São Carlos SP – Brasil' },
+        { name: 'Carlos Antônio Leite Brandão',       institution: 'Universidade Federal de Minas Gerais UFMG / Belo Horizonte' },
+        { name: 'Carlos Eduardo Dias Comas',          institution: 'Universidade Federal do Rio Grande do Sul UFRGS / Porto Alegre RS – Brasil' },
+        { name: 'Cecília Rodrigues dos Santos',       institution: 'Universidade Presbiteriana Mackenzie / São Paulo SP – Brasil' },
+        { name: 'Edson da Cunha Mahfuz',              institution: 'Universidade Federal do Rio Grande do Sul UFRGS / Porto Alegre RS – Brasil' },
+        { name: 'Eduardo Aquino',                     institution: 'University of Manitoba / Winnipeg – Canadá' },
+        { name: 'Eduardo Subirats',                   institution: 'New York University / New York – Estados Unidos' },
+        { name: 'Emanuel Dimas de Melo Pimenta',      institution: 'European Environmental Tribunal / Locarno – Suíça' },
+        { name: 'Fábio Duarte',                       institution: 'Pontifícia Universidade Católica PUC-PR / Curitiba PR – Brasil' },
+        { name: 'Fernando Alvarez Prozorovich',       institution: 'Universidad Politécnica de Catalunya ETSAB-UPC / Barcelona – Espanha' },
+        { name: 'Fernando Lara',                      institution: 'University of Michigan / Estados Unidos' },
+        { name: 'Gilda Collet Bruna',                 institution: 'Universidade Presbiteriana Mackenzie / São Paulo SP – Brasil' },
+        { name: 'Horacio Enrique Torrent Schneider',  institution: 'Pontificia Universidad Católica de Chile / Santiago – Chile' },
+        { name: 'Hugo Segawa',                        institution: 'Universidade de São Paulo USP / São Paulo SP – Brasil' },
+        { name: 'João Masao Kamita',                  institution: 'Pontifícia Universidade Católica PUC-RJ / Rio de Janeiro RJ – Brasil' },
+        { name: 'Jorge Francisco Liernur',            institution: 'Universidade Torcuato Di Tella / Buenos Aires – Argentina' },
+        { name: 'José Geraldo Simões Junior',         institution: 'Universidade Presbiteriana Mackenzie / São Paulo SP – Brasil' },
+        { name: 'Josep Quetglas',                     institution: 'Universidad Politécnica de Catalunya ETSAB-UPC / Barcelona – Espanha' },
+        { name: 'Luis Espallargas Gimenez',           institution: 'Pontifícia Universidade Católica PUC-Campinas / Campinas SP – Brasil' },
+        { name: 'Luiz Manuel do Eirado Amorim',       institution: 'Universidade Federal de Pernambuco UFPE / Recife PE – Brasil' },
+        { name: 'Marcio Cotrim Cunha',                institution: 'Universidade Federal da Paraíba DA-UFPB / João Pessoa PB – Brasil' },
+        { name: 'Marco do Valle',                     institution: 'Universidade Estadual de Campinas Unicamp / Campinas SP – Brasil' },
+        { name: 'Marcos José Carrilho',               institution: 'Universidade Presbiteriana Mackenzie / São Paulo SP – Brasil' },
+        { name: 'Margareth da Silva Pereira',         institution: 'Universidade Federal do Rio de Janeiro FAU-UFRJ / Rio de Janeiro RJ – Brasil' },
+        { name: 'Maria Beatriz Camargo Aranha',       institution: 'Pontifícia Universidade Católica PUC-Campinas / Campinas SP – Brasil' },
+        { name: 'Maria Stella Martins Bresciani',     institution: 'Universidade Estadual de Campinas Unicamp / Campinas SP – Brasil' },
+        { name: 'Mônica Junqueira de Camargo',        institution: 'Universidade de São Paulo USP / São Paulo SP – Brasil' },
+        { name: 'Nadia Somekh',                       institution: 'Universidade Presbiteriana Mackenzie / São Paulo SP – Brasil' },
+        { name: 'Otavio Leonidio',                    institution: 'Pontifícia Universidade Católica PUC-RJ / Rio de Janeiro RJ – Brasil' },
+        { name: 'Paola Berenstein Jacques',           institution: 'Universidade Federal da Bahia UFBA / Salvador BA – Brasil' },
+        { name: 'Paul Meurs',                         institution: 'Universidade de Tecnologia de Delft / Delft – Holanda' },
+        { name: 'Ramón Gutiérrez',                    institution: 'CEDODAL / Buenos Aires – Argentina' },
+        { name: 'Regina Maria Prosperi Meyer',        institution: 'Universidade de São Paulo USP / São Paulo SP – Brasil' },
+        { name: 'Renato Anelli',                      institution: 'Universidade de São Paulo EESC-USP / São Carlos SP – Brasil' },
+        { name: 'Roberto Conduru',                    institution: 'Universidade do Estado do Rio de Janeiro – UERJ / Rio de Janeiro RJ – Brasil' },
+        { name: 'Ruth Verde Zein',                    institution: 'Universidade Presbiteriana Mackenzie / São Paulo SP – Brasil' },
+        { name: 'Sophia S. Telles',                   institution: 'Crítica de arquitetura / São Paulo SP – Brasil' },
+        { name: 'Sonia Marques',                      institution: 'Universidade Federal do Rio Grande do Norte / Natal RN – Brasil' },
+        { name: 'Vera Santana Luz',                   institution: 'Pontifícia Universidade Católica PUC-Campinas / Campinas SP – Brasil' },
+        { name: 'Vicente del Rio',                    institution: 'California Polytechnic State University / San Luis Obispo – Estados Unidos' },
+        { name: 'Vladimir Bartalini',                 institution: 'Universidade de São Paulo USP / São Paulo SP – Brasil' },
+      ],
+    },
+  },
+  arquiteturismo: {
+    description: 'Arquiteturismo é um periódico online mensal, sobre as múltiplas relações entre arquitetura e turismo, disponibilizado na rede mundial internet pelo Portal Vitruvius, portal especializado em arquitetura e urbanismo pela Romano Guerra Editora.',
+    issn: '1982-9930',
+    editors: 'Abílio Guerra e Michel Gorski',
+    email: 'leitor@arquiteturismo.com.br',
+    website: 'www.arquiteturismo.com.br',
+    normas: true,
+  },
+  drops: {
+    description: 'Drops é um periódico mensal, de divulgação de assuntos culturais variados, disponibilizado na rede mundial internet pelo Vitruvius, portal especializado em arquitetura e urbanismo pela Romano Guerra Editora.',
+    issn: '2175-6716',
+    editors: 'Abilio Guerra, Flavio Coddou, Marcio Cotrim e Silvana Romano Santos',
+    email: 'vitruvius@vitruvius.com.br',
+    normas: true,
+  },
+  minhacidade: {
+    description: 'Minha Cidade é um periódico mensal, fórum de debates sobre questões urbanas, disponibilizado na rede mundial internet pelo Vitruvius, portal especializado em arquitetura e urbanismo pela Romano Guerra Editora.',
+    issn: '1982-9922',
+    editors: 'Abilio Guerra, Flavio Coddou, Marcio Cotrim e Silvana Romano Santos',
+    email: 'mc@vitruvius.com.br',
+    normas: true,
+  },
+  entrevista: {
+    description: 'Entrevista é um periódico mensal disponibilizado na rede mundial internet pelo Vitruvius, portal especializado em arquitetura e urbanismo pela Romano Guerra Editora.',
+    issn: '2175-6708',
+    editors: 'Abilio Guerra, Flavio Coddou, Marcio Cotrim e Silvana Romano Santos',
+    email: 'vitruvius@vitruvius.com.br',
+    normas: true,
+  },
+  projetos: {
+    description: 'Projetos é um periódico mensal disponibilizado na rede mundial internet pelo Vitruvius, portal especializado em arquitetura e urbanismo pela Romano Guerra Editora.',
+    issn: '2595-4245',
+    editors: 'Abilio Guerra, Flavio Coddou, Marcio Cotrim e Silvana Romano Santos',
+    email: 'vitruvius@vitruvius.com.br',
+  },
+  resenhasonline: {
+    description: 'Resenhas Online é um periódico mensal disponibilizado na rede mundial internet pelo Vitruvius, portal especializado em arquitetura e urbanismo pela Romano Guerra Editora.',
+    issn: '2175-6694',
+    editors: 'Abilio Guerra, Flavio Coddou, Marcio Cotrim e Silvana Romano Santos',
+    email: 'vitruvius@vitruvius.com.br',
+    normas: true,
+  },
+};
+
+const data = EXPEDIENTE[magazine];
+const hasConselho = !!data?.conselho;
+---
+
+<Base title={`expediente — ${magLabel}`} magazine={magazine}>
+  <div class="container">
+    <div class="expediente-page" style="padding: 12px 0 36px;">
+
+      <div class="rule-three rule-three--mag" style="margin-top: 0;">expediente</div>
+
+      {data ? (
+        <div class="expediente-body expediente-two-col clearfix">
+
+          <div class="expediente-info">
+            <p>{data.description}</p>
+            <p>ISSN {data.issn}</p>
+            <p>
+              <strong>{data.editors.includes(' e ') || data.editors.includes(',') ? 'editores responsáveis' : 'editor responsável'}</strong><br />
+              {data.editors}
+            </p>
+            <p>
+              <strong>email de contato</strong><br />
+              <a href={`mailto:${data.email}`}>{data.email}</a>
+            </p>
+            {data.website && (
+              <p>
+                <strong>endereço eletrônico</strong><br />
+                {data.website}
+              </p>
+            )}
+            {data.normas && (
+              <p>
+                <strong>normas para publicação</strong><br />
+                {NORMAS_MAGS.map(m => (
+                  <><a href={`/revistas/normas/${m.slug}`}>{m.label}</a><br /></>
+                ))}
+              </p>
+            )}
+          </div>
+
+          <div class="expediente-conselho">
+            {data.conselho && (
+              <>
+                <p>
+                  <strong>{data.conselho.title}</strong><br />
+                  Os membros do Conselho Editorial de Arquitextos, responsáveis pela avaliação dos artigos submetidos pelos autores, são os seguintes:
+                </p>
+                <ul class="conselho-list">
+                  {data.conselho.members.map(m => (
+                    <li><strong>{m.name}</strong> {m.institution}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+        </div>
+      ) : (
+        <p style="color:#999;">Informações não disponíveis.</p>
+      )}
+
+    </div>
+  </div>
+</Base>

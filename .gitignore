@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+
+# Media assets (served from R2 / local disk, not tracked in git)
+site/public/media/
+
+# Database (binary, managed separately)
+*.db
+*.db-shm
+*.db-wal
+
+# OS / editor
+.DS_Store
+.env
+.env.*
+*.swp
+*.swo

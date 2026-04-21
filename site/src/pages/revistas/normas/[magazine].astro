@@ -1,0 +1,246 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { getMagazines } from '../../../lib/db';
+
+export async function getStaticPaths() {
+  return getMagazines().map(mag => ({
+    params: { magazine: mag.title },
+  }));
+}
+
+const { magazine } = Astro.params;
+
+const LABELS: Record<string, string> = {
+  arquitextos:    'arquitextos',
+  arquiteturismo: 'arquiteturismo',
+  drops:          'drops',
+  minhacidade:    'minha cidade',
+  entrevista:     'entrevista',
+  projetos:       'projetos',
+  resenhasonline: 'resenhas online',
+};
+const magLabel = LABELS[magazine] ?? magazine;
+
+const NORMAS: Record<string, string> = {
+  arquitextos: `
+<p><strong>1) Normas para publicação de artigos na revista Arquitextos (ISSN 1809-6298)</strong></p>
+<p>O artigo enviado para publicação em "Arquitextos" deve atender às seguintes normativas:<br />
+<em>Ineditismo</em>: não há necessidade do artigo ser inédito, mas caso ele tenha sido publicado, colocar nota de rodapé junto ao título, contendo a referência completa da publicação original (nome, data, cidade, página, etc);<br />
+<em>Título e subtítulo</em>: o título e o subtítulo devem registrar o mais objetivamente possível o conteúdo e a abordagem teórica;<br />
+<em>Sinopse curricular</em>: o curriculum vitae deve ser incluído logo abaixo do nome do autor, com um tamanho máximo de 400 caracteres com espaço;<br />
+<em>Resumo (abstract)</em>: antes do início do artigo, apresentar resumo de até 255 caracteres com espaço, versões em português, espanhol e inglês;<br />
+<em>Tamanho</em>: o artigo deve ter um máximo de 30.000 caracteres (com espaços), em arquivo texto (word/doc);<br />
+<em>Língua</em>: para serem avaliados, os artigos precisam estar redigidos em português, espanhol ou inglês;<br />
+<em>Ilustrações</em>: as imagens de ilustração (fotos + desenhos) devem ser enviadas em arquivos JPG, RGB, 1.200 pixels de largura, altura na proporção. O número ideal de imagens gira em torno de 10 imagens a 15 imagens, com um limite máximo de 20 imagens; as imagens, que devem necessariamente ser enviados em separado, não podem, em hipótese alguma, ter problemas de direitos autorais;<br />
+<em>Citações</em>: todas as referências bibliográficas devem ser registradas em notas de rodapé relacionadas no final do artigo, com numeração arábica; exemplo:</p>
+<p style="padding: 16px 0;"><strong>Notas</strong><br /><br />
+1<br />
+PEDROSA, Mário. Arquitetura e atualidade. <em>Dos murais de Portinari aos espaços de Brasília</em>. São Paulo, Perspectiva, coleção Debates, n. 170, 1981, p. 267.<br /><br />
+2<br />
+ARANTES, Otília Beatriz Fiori. Lúcio Costa e a boa causa da arquitetura moderna. In ARANTES, Otília Beatriz Fiori e ARANTES, Paulo Eduardo. <em>O sentido da formação. Três estudos sobre Antonio Candido, Gilda de Mello e Souza e Lúcio Costa</em>. São Paulo, Paz e Terra, 1997.<br /><br />
+3<br />
+MARX, Roberto Burle. Depoimento. In XAVIER, Alberto (org). <em>Arquitetura moderna brasileira: depoimento de uma geração</em>. São Paulo, ABEA / FVA / Pini, projeto Hunter Douglas, 1987, p. 300-304.<br /><br />
+4<br />
+FARIAS, Agnaldo Aricê Caldas. <em>Gregori Warchavchik: introdutor da arquitetura moderna no Brasil</em>. Dissertação de mestrado. Campinas, IFCH-Unicamp, 1990.<br /><br />
+5<br />
+BARROS. Couto de. Diário Nacional, 17/07/1928. Apud FERRAZ, Geraldo. <em>Warchavchik e a introdução da nova arquitetura no Brasil: 1925 a 1940</em>. São Paulo, Museu de Arte, 1965, p. 26.</p>
+<p><strong>2) Informações sobre a publicação de artigos em Arquitextos</strong></p>
+<p>Abaixo relacionamos informações importantes sobre condições gerais da publicação, avaliação dos artigos e dados para contato com o editor:<br /><br />
+<em>Condições gerais</em><br />
+– a colaboração não é remunerada;<br />
+– o artigo fica disponibilizado por tempo indeterminado;<br />
+– o artigo recebe um número único e intransferível, permitindo a correta citação do mesmo em artigos, livros e demais publicações;<br />
+– o endereço eletrônico também é exclusivo, permitindo links diretos para o artigo e sua inclusão em citações;<br />
+– os artigos redigidos originalmente em espanhol e inglês serão publicados na versão original, mas poderão ser publicados também em português, por interesse do autor;<br />
+– a eventual tradução do inglês e espanhol para o português fica a cargo do autor;<br />
+– a avaliação dos artigos redigidos originalmente em espanhol e inglês acarreta, em geral, um tempo maior para avaliação.<br /><br />
+<em>Avaliação</em><br />
+– a partir do dia 01 de setembro de 2008 foi adotado o sistema "avaliação cega" (blind review), com as seguintes possibilidades de enquadramento: a) aprovado; b) não aprovado; c) aprovado com sugestões e/ou restrições (artigos potencialmente de boa qualidade, mas com problemas pontuais de redação, argumentação, dados factuais, etc); d) reprovado com sugestões para reapresentação (artigos com boas idéias e/ou pontos de partida, mas com problemas estruturais que precisam necessariamente ser equacionados);<br />
+– solicita-se ao autor que identifique em vermelho todas as referências no texto que possam identificar a autoria;<br />
+– todas as colaborações são avaliadas pelo Conselho Editorial de Arquitextos ou por um de nossos pareceristas ad hoc (professores doutores vinculados às principais instituições universitárias do país);<br />
+– como a avaliação é feita de forma voluntária e sem remuneração, não há um prazo previamente estipulado para a avaliação, que será realizada o mais rápido possível, dentro das condições e disponibilidades de cada parecerista.<br /><br />
+<em>Contato</em><br />
+– os contatos com o editor de Arquitextos – para envio de texto e imagens, ou para eventuais dúvidas – devem ser mantidos através do email <a href="mailto:arquitextos@vitruvius.com.br">arquitextos@vitruvius.com.br</a>.</p>
+<p><strong>3) Declaração</strong></p>
+<p>Na caixa de diálogo do e-mail utilizado para enviar o artigo deverá constar a seguinte declaração do autor (preencher itens sublinhados e manter apenas a alternativa correta):<br />
+<em><br />Eu, [nome completo], CPF [colocar número], RG [colocar número], residente no endereço [colocar endereço completo, com CEP], autorizo a revista online Arquitextos (ISSN 1809-6298) a publicar, caso seja aprovado, o artigo [colocar o título e subtítulo].<br />
+Atesto como sendo expressão absoluta da verdade as seguintes afirmações:<br />
+a) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou o único autor do artigo acima nomeado / sou autor do artigo acima nomeado, em co-autoria com [completar com os nomes completos dos co-autores].<br />
+b) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) o artigo enviado para avaliação é inédito / foi publicado em [completar com os dados completos da publicação original].<br />
+c) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável exclusivo / somos responsáveis exclusivos pela redação, idéias e opiniões presentes no artigo.<br />
+d) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável / somos responsáveis pelo uso das imagens, caso o artigo seja aceito para a publicação on-line (sendo autor ou autores das imagens, obtendo autorização junto aos detentores legais dos direitos autorais e/ou comprovando estarem em domínio comum por terem sido publicadas há mais de setenta e um anos).<br /><br />
+[Local e data]<br />
+[Nome(s) completos do(s) autor(es)]</em></p>
+`,
+
+  arquiteturismo: `
+<p><strong>1) Normas para publicação de artigos na revista Arquiteturismo (ISSN 1982-9930)</strong></p>
+<p>O artigo enviado para publicação em "Arquiteturismo" deve atender às seguintes normativas:<br />
+<em>Ineditismo</em>: não há necessidade do artigo ser inédito, mas caso ele tenha sido publicado, colocar nota de rodapé junto ao título, contendo a referência completa da publicação original (nome, data, cidade, página, etc);<br />
+<em>Tamanho</em>: o artigo deve ter um máximo de 8.500 caracteres (com espaços), em arquivo texto (word/doc);<br />
+<em>Resumo (abstract)</em>: antes do início do artigo, apresentar resumo de até 255 caracteres com espaço, versões em português, espanhol e inglês;<br />
+<em>Título</em>: deve ser curto, com no máximo 33 caracteres (com espaço);<br />
+<em>Sinopse curricular</em>: o curriculum vitae deve ser incluído logo abaixo do nome do autor, com um tamanho máximo de 400 caracteres com espaço;<br />
+<em>Caráter</em>: o artigo não pode ter nota de rodapé e deve priorizar a linguagem coloquial; o assunto deve se encaixar em uma das seções existentes: a) "Paisagem construída": sobre projeto de arquitetura, urbanismo, paisagismo, etc.; b) "Viagem guiada": sobre passeios organizados; c) "Roteiro de viagem": sobre viagens a regiões e cidades de interesse turístico; d) "Na estrada": viagens com interação pessoal com situações e população local; e) "Arquiteturismo em questão": texto mais conceitual, envolvendo aspectos da interação entre arquitetura e turismo; f) "Viagem de estudo": viagens individuais ou coletivas voltadas para o estudo de edifícios, cidades e regiões; g) "Viagem de trabalho": viagens individuais ou coletivas, cuja finalidade primeira é o trabalho, mas que há um grande proveito turístico; h) "Viagem de formação": viagens individuais ou coletivas feitas na juventude, cuja experiência foi fundamental para a vida adulta; i) "Viagem à minha terra": passeio pela cidade da infância, redescobrindo lugares e situações que marcaram a percepção de forma profunda; j) "Eu estive lá!": narrativa sobre presença em evento histórico; k) "Biblioteca": dicas de leitura; l) "Arq'culinária": relato de viagens e passeios que envolvam a relação entre arquitetura, urbanismo e culinária; m) "Viagem cultural": relato de viagem dirigida por interesse cultural específico;<br />
+<em>Imagens</em>: devem seguir as seguintes orientações: a) quantidade: 20 imagens, numeradas; b) legendas: em arquivo doc, com a mesma numeração das fotos, constando local, descrição, data, fotógrafo, fonte, etc; c) características técnicas: em arquivos JPG, RGB, 1.200 pixels de largura; d) copyright: as imagens não podem ter problemas de direitos autorais;<br />
+<em>Envio</em>: texto e imagens devem ser encaminhadas para o email leitor@arquiteturismo.com.br.</p>
+<p><strong>2) Informações complementares</strong><br />
+Abaixo relacionamos informações importantes sobre condições gerais da publicação, avaliação dos artigos e dados para contato com o editor:<br />
+– a colaboração não é remunerada;<br />
+– o artigo fica disponibilizado por tempo indeterminado;<br />
+– o artigo recebe um número único e intransferível, permitindo a correta citação do mesmo em artigos, livros e demais publicações;<br />
+– o endereço eletrônico também é exclusivo, permitindo links diretos para o artigo e sua inclusão em citações;<br />
+– todas as colaborações são avaliadas preliminarmente, mas temos todo o interesse em publicar novos autores;<br />
+– qualquer dúvida, entre em contato, no email leitor@arquiteturismo.com.br.</p>
+<p><strong>3) Declaração</strong></p>
+<p>Na caixa de diálogo do e-mail utilizado para enviar o artigo deverá constar a seguinte declaração do autor (preencher itens sublinhados e manter apenas a alternativa correta):<br />
+<em><br />Eu, [nome completo], CPF [colocar número], RG [colocar número], residente no endereço [colocar endereço completo, com CEP], autorizo a revista online Arquiteturismo (ISSN 1982-9930) a publicar, caso seja aprovado, o artigo [colocar o título e subtítulo].<br />
+Atesto como sendo expressão absoluta da verdade as seguintes afirmações:<br />
+a) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou o único autor do artigo acima nomeado / sou autor do artigo acima nomeado, em co-autoria com [completar com os nomes completos dos co-autores].<br />
+b) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) o artigo enviado para avaliação é inédito / foi publicado em [completar com os dados completos da publicação original].<br />
+c) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável exclusivo / somos responsáveis exclusivos pela redação, idéias e opiniões presentes no artigo.<br />
+d) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável / somos responsáveis pelo uso das imagens, caso o artigo seja aceito para a publicação on-line (sendo autor ou autores das imagens, obtendo autorização junto aos detentores legais dos direitos autorais e/ou comprovando estarem em domínio comum por terem sido publicadas há mais de setenta e um anos).<br /><br />
+[Local e data]<br />
+[Nome(s) completos do(s) autor(es)]</em></p>
+`,
+
+  drops: `
+<p><strong>1) Normas para publicação de artigos na revista Drops (ISSN 2175-6716)</strong></p>
+<p>O artigo enviado para publicação em "Drops" deve atender às seguintes normativas:<br />
+<em>Ineditismo</em>: não há necessidade do artigo ser inédito, mas caso ele tenha sido publicado, colocar nota de rodapé junto ao título, contendo a referência completa da publicação original (nome, data, cidade, página, etc);<br />
+<em>Tamanho</em>: texto deve ter um máximo de 8.000 caracteres (com espaços) e deve ser enviado em formato word/doc;<br />
+<em>Resumo (abstract)</em>: antes do início do artigo, apresentar resumo de até 255 caracteres com espaço, versões em português, espanhol e inglês;<br />
+<em>Caráter</em>: texto pode ter tema e abordagem livre, com preferência para arquitetura, urbanismo, paisagismo e arte;<br />
+<em>Sinopse curricular</em>: o curriculum vitae deve ser incluído logo abaixo do nome do autor, com um tamanho máximo de 400 caracteres com espaço;<br />
+<em>Imagens</em>: imagens para ilustração devem ser enviadas em arquivos JPG, RGB, 1.200 pixels de largura, altura na proporção; as imagens, em torno de 1 a 4, não podem, em hipótese alguma, ter problemas de direitos autorais;<br />
+<em>Envio</em>: enviar texto e imagens, em arquivos separados, para vitruvius@vitruvius.com.br.</p>
+<p><strong>2) Informações complementares</strong><br />
+Abaixo relacionamos informações importantes sobre condições gerais da publicação, avaliação dos artigos e dados para contato com o editor:<br />
+– o envio da colaboração pressupõe o aceite das regras e autorização para publicação;<br />
+– a colaboração não é remunerada;<br />
+– o texto fica disponibilizado por tempo indeterminado;<br />
+– as colaborações não acordadas previamente serão avaliadas preliminarmente; por se tratar de uma editoria de variedades, os critérios fundamentais para a aprovação é o interesse do assunto e a ausência de teor ofensivo;<br />
+– os contatos com o editor de Drops – para envio de texto e imagens, ou para eventuais dúvidas – devem ser mantidos através do email vitruvius@vitruvius.com.br.</p>
+<p><strong>3) Declaração</strong></p>
+<p>Na caixa de diálogo do e-mail utilizado para enviar o artigo deverá constar a seguinte declaração do autor (preencher itens sublinhados e manter apenas a alternativa correta):<br />
+<em><br />Eu, [nome completo], CPF [colocar número], RG [colocar número], residente no endereço [colocar endereço completo, com CEP], autorizo a revista online Drops (ISSN 2175-6716) a publicar, caso seja aprovado, o artigo [colocar o título e subtítulo].<br />
+Atesto como sendo expressão absoluta da verdade as seguintes afirmações:<br />
+a) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou o único autor do artigo acima nomeado / sou autor do artigo acima nomeado, em co-autoria com [completar com os nomes completos dos co-autores].<br />
+b) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) o artigo enviado para avaliação é inédito / foi publicado em [completar com os dados completos da publicação original].<br />
+c) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável exclusivo / somos responsáveis exclusivos pela redação, idéias e opiniões presentes no artigo.<br />
+d) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável / somos responsáveis pelo uso das imagens, caso o artigo seja aceito para a publicação on-line (sendo autor ou autores das imagens, obtendo autorização junto aos detentores legais dos direitos autorais e/ou comprovando estarem em domínio comum por terem sido publicadas há mais de setenta e um anos).<br /><br />
+[Local e data]<br />
+[Nome(s) completos do(s) autor(es)]</em></p>
+`,
+
+  entrevista: `
+<p><strong>1) Normas para publicação de artigos na revista Entrevista (ISSN 2175-6708)</strong></p>
+<p>O material enviado para "Entrevista" deve atender algumas normativas:<br />
+<em>Ineditismo</em>: não há necessidade da entrevista ser inédita, mas caso ela tenha sido publicado, colocar na ficha técnica a referência completa da publicação original (nome, data, cidade, página, etc);<br />
+<em>Entrevistado</em>: o personagem entrevistado deve ser culturalmente relevante, portanto é fundamental que sejamos contatado antecipadamente para confirmarmos o interesse;<br />
+<em>Blocos temáticos</em>: a entrevista deve ser formatada em blocos temáticos, com um mínimo de 4 blocos e um máximo de 9 blocos, sendo que necessariamente o primeiro é uma introdução (explicando a relevância do entrevistado, situando-o no cenário atual da produção arquitetônica e cultural) e o último, uma ficha técnica, com breve sinopse curricular (com um tamanho máximo de 400 caracteres com espaço) do entrevistado e do entrevistador, dados sobre local e data da entrevista, tradutor, bibliografia, etc.;<br />
+<em>Resumo (abstract)</em>: antes do início da entrevista, apresentar resumo de até 255 caracteres com espaço, versões em português, espanhol e inglês;<br />
+<em>Imagens</em>: enviar 1 ou 2 imagens para cada bloco da entrevista, em arquivo JPG, RGB, 1.200 pixels de largura, altura na proporção; as imagens não podem ter problemas de direitos autorais, sendo aconselhável que seja cedida pelo próprio entrevistado;<br />
+<em>Envio</em>: enviar texto e imagens, em arquivos separados, para vitruvius@vitruvius.com.br.</p>
+<p><strong>2) Informações complementares</strong><br />
+Abaixo relacionamos informações importantes sobre condições gerais da publicação, avaliação dos artigos e dados para contato com o editor:<br />
+– a colaboração não é remunerada;<br />
+– a entrevista fica disponibilizada por tempo indeterminado;<br />
+– a entrevista recebe um endereço eletrônico único e intransferível, permitindo a correta citação do mesmo em curriculum, artigos, livros e demais publicações;<br />
+– as colaborações não aceitas previamente serão avaliadas preliminarmente, mas temos todo o interesse em publicar novos autores; as colaborações previamente acordadas, serão publicadas conforme prazos estabelecidos pelo editor;<br />
+– os contatos com o editor de Entrevista devem ser mantidos através do email vitruvius@vitruvius.com.br.</p>
+<p><strong>3) Declaração</strong></p>
+<p>Na caixa de diálogo do e-mail utilizado para enviar o artigo deverá constar a seguinte declaração do autor (preencher itens sublinhados e manter apenas a alternativa correta):<br />
+<em>Eu, [nome completo], CPF [colocar número], RG [colocar número], residente no endereço [colocar endereço completo, com CEP], autorizo a revista online Entrevista (ISSN 2175-6708) a publicar, caso seja aprovado, a entrevista de minha autoria com [colocar o nome do entrevistado]. Atesto como sendo expressão absoluta da verdade as seguintes afirmações:<br />
+a) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou o único autor do artigo acima nomeado / sou autor da entrevista com [colocar o nome do entrevistado], em co-autoria com [completar com os nomes completos dos co-autores].<br />
+b) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) a entrevista para avaliação é inédita / foi publicada em [completar com os dados completos da publicação original].<br />
+c) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável exclusivo / somos responsáveis exclusivos pela entrevista, sendo o entrevistado responsável pelas idéias e opiniões presentes no artigo.<br />
+d) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável / somos responsáveis pelo uso das imagens, caso o artigo seja aceito para a publicação on-line (sendo autor ou autores das imagens, obtendo autorização junto aos detentores legais dos direitos autorais e/ou comprovando estarem em domínio comum por terem sido publicadas há mais de setenta e um anos).<br /><br />
+[Local e data]<br />
+[Nome(s) completos do(s) autor(es)]</em></p>
+`,
+
+  minhacidade: `
+<p><strong>1) Normas para publicação de artigos na revista Minha Cidade (ISSN 1982-9922)</strong></p>
+<p>A publicação em "Minha Cidade" deve atender algumas normativas:<br />
+<em>Ineditismo</em>: não há necessidade da entrevista ser inédita, mas caso ela tenha sido publicado, colocar na ficha técnica a referência completa da publicação original (nome, data, cidade, página, etc);<br />
+<em>Caráter</em>: Os textos devem ser enviados para o editor responsável de "Minha cidade" que se compromete de antemão a publicar todos os artigos que, além de abordar temática urbana, se mostrarem sérios e bem argumentados, não cabendo a censura ideológica ou intelectual, o que significa que todos os textos publicados são de inteira responsabilidade do autor, não havendo uma necessária concordância, por parte do editor, das idéias ali manifestas. Os textos serão disponibilizados conforme a ordem de chegada ou segundo critérios editoriais de oportunidade, quando for o caso. O editor se reserva também o direito de fazer as correções ortográficas necessárias.<br />
+<em>Tamanho</em>: Os textos deverão ter entre 2.500 e 10.000 caracteres, com espaço incluso, e enviados por email em arquivos Word em anexo, com edição simplificada.<br />
+<em>Resumo (abstract)</em>: antes do início do artigo, apresentar resumo de até 255 caracteres com espaço, versões em português, espanhol e inglês;<br />
+<em>Imagens</em>: As imagens deverão ser enviadas também por email em arquivos JPG, RGB, 72 DPI, 1.200 pixels de largura. As imagens devem ter autorização de republicação por parte de seus autores.<br />
+<em>Sinopse curricular</em>: o curriculum vitae deve ser incluído logo abaixo do nome do autor, com um tamanho máximo de 400 caracteres com espaço;<br />
+<em>Fórum de debates</em>: Todos aqueles que quiserem comentar, contestar ou reiterar as opiniões apresentadas por algum articulista poderão enviar mensagens que serão incluídas no "Fórum de debates", que se localiza no final do texto. Só serão publicadas as mensagens aonde constarem nome completo do autor e a cidade aonde reside.</p>
+<p><strong>2) Informações complementares</strong><br />
+Abaixo relacionamos informações importantes sobre condições gerais da publicação, avaliação dos artigos e dados para contato com o editor:<br />
+– o envio da colaboração pressupõe o aceite das regras e autorização para publicação;<br />
+– a colaboração não é remunerada;<br />
+– o texto fica disponibilizado por tempo indeterminado;<br />
+– as colaborações não acordadas previamente serão avaliadas preliminarmente; por se tratar de uma editoria de variedades, os critérios fundamentais para a aprovação é o interesse do assunto e a ausência de teor ofensivo;<br />
+– os contatos com o editor de Minha Cidade – para envio de texto e imagens, ou para eventuais dúvidas – devem ser mantidos através do email vitruvius@vitruvius.com.br.</p>
+<p><strong>3) Declaração</strong></p>
+<p>Na caixa de diálogo do e-mail utilizado para enviar o artigo deverá constar a seguinte declaração do autor (preencher itens sublinhados e manter apenas a alternativa correta):<br />
+<em><br />Eu, [nome completo], CPF [colocar número], RG [colocar número], residente no endereço [colocar endereço completo, com CEP], autorizo a revista online Minha Cidade (ISSN 1982-9922) a publicar, caso seja aprovado, o artigo [colocar o título e subtítulo].<br />
+Atesto como sendo expressão absoluta da verdade as seguintes afirmações:<br />
+a) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou o único autor do artigo acima nomeado / sou autor do artigo acima nomeado, em co-autoria com [completar com os nomes completos dos co-autores].<br />
+b) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) o artigo enviado para avaliação é inédito / foi publicado em [completar com os dados completos da publicação original].<br />
+c) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável exclusivo / somos responsáveis exclusivos pela redação, idéias e opiniões presentes no artigo.<br />
+d) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável / somos responsáveis pelo uso das imagens, caso o artigo seja aceito para a publicação on-line (sendo autor ou autores das imagens, obtendo autorização junto aos detentores legais dos direitos autorais e/ou comprovando estarem em domínio comum por terem sido publicadas há mais de setenta e um anos).<br /><br />
+[Local e data]<br />
+[Nome(s) completos do(s) autor(es)]</em></p>
+`,
+
+  projetos: `
+<p><strong>Normas — projetos</strong></p>
+<p>Projetos não possui normas específicas para publicação além das orientações editoriais gerais. Entre em contato pelo email <a href="mailto:vitruvius@vitruvius.com.br">vitruvius@vitruvius.com.br</a>.</p>
+`,
+
+  resenhasonline: `
+<p><strong>1) Normas para publicação de artigos na revista Resenhas Online (ISSN 2175-6694)</strong></p>
+<p>A publicação em "Resenhas Online" deve atender algumas normativas:<br />
+<em>Ineditismo</em>: não há necessidade da entrevista ser inédita, mas caso ela tenha sido publicado, colocar na ficha técnica a referência completa da publicação original (nome, data, cidade, página, etc);<br />
+<em>Tamanho</em>: a resenha deve ter um máximo de 12.000 caracteres (com espaços);<br />
+<em>Resumo (abstract)</em>: antes do início do artigo, apresentar resumo de até 255 caracteres com espaço, versões em português, espanhol e inglês;<br />
+<em>Título</em>: a resenha deve ter título diferente do título do livro resenhado;<br />
+<em>Ficha técnica</em>: a resenha deve ter no seu início uma ficha técnica do livro resenhado, contendo os dados necessários (título, autor, editora, cidade, ano, número de páginas, ISBN, etc);<br />
+<em>Imagens</em>: enviar 1 imagem, retirada do corpo do livro (não vale a capa) para ilustrar a matéria, em arquivo JPG, RGB, 1.200 pixels de largura, altura na proporção;<br />
+<em>Sinopse curricular</em>: o curriculum vitae deve ser incluído logo abaixo do nome do autor, com um tamanho máximo de 400 caracteres com espaço;<br />
+<em>Envio</em>: enviar texto e imagem para vitruvius@vitruvius.com.br.</p>
+<p><strong>2) Informações complementares</strong><br />
+Abaixo relacionamos informações importantes sobre condições gerais da publicação, avaliação dos artigos e dados para contato com o editor:<br />
+– a colaboração não é remunerada;<br />
+– a resenha fica disponibilizado por tempo indeterminado;<br />
+– a resenha recebe um número único e intransferível, permitindo a correta citação do mesmo em artigos, livros e demais publicações;<br />
+– o endereço eletrônico também é exclusivo, permitindo links diretos para o artigo e sua inclusão em citações;<br />
+– todas as colaborações são avaliadas preliminarmente, mas temos todo o interesse em publicar novos autores;<br />
+– os contatos com o editor de Resenhas Online devem ser mantidos através do email vitruvius@vitruvius.com.br.</p>
+<p><strong>3) Declaração</strong><br />
+Na caixa de diálogo do e-mail utilizado para enviar o artigo deverá constar a seguinte declaração do autor (preencher itens sublinhados e manter apenas a alternativa correta):<br />
+<em>Eu, [nome completo], CPF [colocar número], RG [colocar número], residente no endereço [colocar endereço completo, com CEP], autorizo a revista online Resenhas Online (ISSN 2175-6694) a publicar, caso seja aprovado, o artigo [colocar o título e subtítulo].<br />
+Atesto como sendo expressão absoluta da verdade as seguintes afirmações:<br />
+a) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou o único autor do artigo acima nomeado / sou autor do artigo acima nomeado, em co-autoria com [completar com os nomes completos dos co-autores].<br />
+b) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) o artigo enviado para avaliação é inédito / foi publicado em [completar com os dados completos da publicação original].<br />
+c) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável exclusivo / somos responsáveis exclusivos pela redação, idéias e opiniões presentes no artigo.<br />
+d) (ESCOLHER UMA DAS DUAS ALTERNATIVAS) sou responsável / somos responsáveis pelo uso das imagens, caso o artigo seja aceito para a publicação on-line (sendo autor ou autores das imagens, obtendo autorização junto aos detentores legais dos direitos autorais e/ou comprovando estarem em domínio comum por terem sido publicadas há mais de setenta e um anos).<br /><br />
+[Local e data]<br />
+[Nome(s) completos do(s) autor(es)]</em></p>
+`,
+};
+
+const content = NORMAS[magazine];
+---
+
+<Base title={`normas — ${magLabel}`} magazine={magazine}>
+  <div class="container">
+    <div class="info-page" style="padding: 12px 0 36px;">
+
+      <div class="rule-three rule-three--mag">normas</div>
+
+      {content ? (
+        <div class="info-page-content normas-content" set:html={content} />
+      ) : (
+        <p style="color:#999;">Informações não disponíveis.</p>
+      )}
+
+    </div>
+  </div>
+</Base>

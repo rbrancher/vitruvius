@@ -1,0 +1,113 @@
+---
+import type { Image } from '../lib/db';
+import { imageUrl } from '../lib/text';
+
+interface Props {
+  images: Image[];
+}
+const { images } = Astro.props;
+
+const items = images.map(img => ({
+  main:    imageUrl(img.src, 'grid_9'),
+  thumb:   imageUrl(img.src, 'gallery_thumb'),
+  caption: img.caption || img.credit || '',
+}));
+
+const first = items[0];
+---
+
+<div class="ag" data-gallery={JSON.stringify(items)}>
+  <div class="ag-stage">
+    <img class="ag-main-img" src={first.main} alt={first.caption} />
+    <button class="ag-prev" aria-label="anterior"></button>
+    <button class="ag-next" aria-label="próximo"></button>
+  </div>
+
+  <div class="ag-infobar">
+    <div class="ag-caption">{first.caption}</div>
+    <div class="ag-counter">1 / {items.length}</div>
+  </div>
+
+  {items.length > 1 && (
+    <div class="ag-thumbstrip">
+      <button class="ag-back" aria-label="rolar esquerda">‹</button>
+      <div class="ag-thumb-viewport">
+        <div class="ag-thumb-track">
+          {items.map((img, i) => (
+            <button class={`ag-thumb${i === 0 ? ' active' : ''}`} data-index={i}>
+              <img src={img.thumb} alt={img.caption} loading="lazy" />
+            </button>
+          ))}
+        </div>
+      </div>
+      <button class="ag-forward" aria-label="rolar direita">›</button>
+    </div>
+  )}
+</div>
+
+<script>
+document.querySelectorAll<HTMLElement>('.ag[data-gallery]').forEach(gallery => {
+  const items: { main: string; thumb: string; caption: string }[] =
+    JSON.parse(gallery.dataset.gallery!);
+  const total = items.length;
+  let current = 0;
+
+  const mainImg   = gallery.querySelector<HTMLImageElement>('.ag-main-img')!;
+  const caption   = gallery.querySelector<HTMLElement>('.ag-caption')!;
+  const counter   = gallery.querySelector<HTMLElement>('.ag-counter')!;
+  const thumbs    = Array.from(gallery.querySelectorAll<HTMLElement>('.ag-thumb'));
+  const track     = gallery.querySelector<HTMLElement>('.ag-thumb-track');
+
+  const THUMB_W = 114; // 108px thumb + 6px gap
+
+  function goTo(index: number) {
+    if (index < 0 || index >= total) return;
+    current = index;
+    const item = items[current];
+    mainImg.src = item.main;
+    mainImg.alt = item.caption;
+    caption.textContent = item.caption;
+    counter.textContent = `${current + 1} / ${total}`;
+    thumbs.forEach((t, i) => t.classList.toggle('active', i === current));
+
+    if (track) {
+      const viewW = (track.parentElement as HTMLElement).offsetWidth;
+      const offset = current * THUMB_W - (viewW / 2 - THUMB_W / 2);
+      track.style.transform = `translateX(${-Math.max(0, offset)}px)`;
+    }
+  }
+
+  thumbs.forEach((thumb, i) => thumb.addEventListener('click', () => goTo(i)));
+
+  gallery.querySelector('.ag-prev')?.addEventListener('click', e => {
+    e.stopPropagation();
+    goTo(current - 1);
+  });
+  gallery.querySelector('.ag-next')?.addEventListener('click', e => {
+    e.stopPropagation();
+    goTo(current + 1);
+  });
+
+  // Click left/right half of main image to navigate
+  const stage = gallery.querySelector<HTMLElement>('.ag-stage')!;
+  stage.addEventListener('click', e => {
+    const rect = stage.getBoundingClientRect();
+    if ((e.target as HTMLElement).closest('.ag-prev, .ag-next')) return;
+    if (e.clientX < rect.left + rect.width / 2) goTo(current - 1);
+    else goTo(current + 1);
+  });
+
+  // Thumb strip scroll buttons
+  const viewport = gallery.querySelector<HTMLElement>('.ag-thumb-viewport');
+  gallery.querySelector('.ag-back')?.addEventListener('click', () => {
+    if (!viewport) return;
+    const steps = Math.max(1, Math.floor(viewport.offsetWidth / THUMB_W));
+    goTo(Math.max(0, current - steps));
+  });
+  gallery.querySelector('.ag-forward')?.addEventListener('click', () => {
+    if (!viewport) return;
+    const steps = Math.max(1, Math.floor(viewport.offsetWidth / THUMB_W));
+    goTo(Math.min(total - 1, current + steps));
+  });
+});
+</script>

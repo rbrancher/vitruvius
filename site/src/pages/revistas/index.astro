@@ -1,0 +1,103 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getMagazines, getLatestEditions, getPublishedArticlesByEdition, authorFullName } from '../../lib/db';
+import { stripHtml } from '../../lib/text';
+
+const magazines = getMagazines();
+const latestEditions = getLatestEditions();
+
+const featuredByMag = Object.fromEntries(
+  latestEditions.map(ed => {
+    const articles = getPublishedArticlesByEdition(ed.id).slice(0, 6);
+    return [ed.magazine_title, { edition: ed, articles }];
+  })
+);
+
+const LABELS: Record<string, string> = {
+  arquitextos:    'arquitextos',
+  arquiteturismo: 'arquiteturismo',
+  drops:          'drops',
+  minhacidade:    'minha cidade',
+  entrevista:     'entrevista',
+  projetos:       'projetos',
+  resenhasonline: 'resenhas online',
+};
+
+const MAG_COLORS: Record<string, string> = {
+  arquitextos:    '#CC0000',
+  arquiteturismo: '#F89820',
+  drops:          '#1C3664',
+  minhacidade:    '#000000',
+  entrevista:     '#0598CD',
+  projetos:       '#673466',
+  resenhasonline: '#009245',
+};
+---
+
+<Base title="Vitruvius" description="Publicações de arquitetura, urbanismo e design — arquivo completo desde 2000.">
+  <div class="container" style="padding-top:16px;">
+
+    {magazines.map(mag => {
+      const data = featuredByMag[mag.title];
+      if (!data || data.articles.length === 0) return null;
+      const { edition, articles } = data;
+      const label = LABELS[mag.title] ?? mag.title;
+      const color = MAG_COLORS[mag.title] ?? '#000';
+
+      // Split into two columns
+      const col1 = articles.slice(0, 3);
+      const col2 = articles.slice(3, 6);
+
+      return (
+        <div class="magazine-section" data-magazine={mag.title}>
+          <div class="magazine-section-header">
+            <a href={`/revistas/browse/${mag.title}`} class="mag-name">{label}</a>
+            <span class="mag-links">
+              <a href={`/revistas/browse/${mag.title}/${edition.idx}`}>edição {edition.idx}</a>
+              <a href={`/revistas/browse/${mag.title}`}>todas as edições</a>
+            </span>
+          </div>
+
+          <div class="edition-columns">
+            <div class="edition-col">
+              {col1.map(a => (
+                <div class="article-entry">
+                  <a class="entry-title"
+                     href={`/revistas/read/${mag.title}/${edition.idx}/${a.id}`}
+                     set:html={a.title} />
+                  {a.subtitle && <div class="entry-subtitle" set:html={a.subtitle} />}
+                  {(a.author_firstname || a.author_lastname) && (
+                    <div class="entry-author">
+                      {authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })}
+                      {a.author_institution && ` — ${a.author_institution}`}
+                    </div>
+                  )}
+                  {a.abstract && <div class="entry-abstract" set:html={a.abstract} />}
+                </div>
+              ))}
+            </div>
+            {col2.length > 0 && (
+              <div class="edition-col">
+                {col2.map(a => (
+                  <div class="article-entry">
+                    <a class="entry-title"
+                       href={`/revistas/read/${mag.title}/${edition.idx}/${a.id}`}
+                       set:html={a.title} />
+                    {a.subtitle && <div class="entry-subtitle" set:html={a.subtitle} />}
+                    {(a.author_firstname || a.author_lastname) && (
+                      <div class="entry-author">
+                        {authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })}
+                        {a.author_institution && ` — ${a.author_institution}`}
+                      </div>
+                    )}
+                    {a.abstract && <div class="entry-abstract" set:html={a.abstract} />}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</Base>

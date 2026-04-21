@@ -1,0 +1,207 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getMagazines, getAllPublishedArticles, authorFullName } from '../../lib/db';
+
+// Build the search index at build time; filtering runs client-side against this data.
+const magazines = getMagazines();
+const allArticles = getAllPublishedArticles();
+
+// Collect unique authors and tags for filter dropdowns
+const authorsMap = new Map<number, string>();
+const tagsMap = new Map<number, string>();
+
+for (const a of allArticles) {
+  if (a.author_id && (a.author_firstname || a.author_lastname)) {
+    authorsMap.set(
+      a.author_id,
+      authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })
+    );
+  }
+}
+
+// Minimal serialisation for client-side search (title + abstract + author + ids)
+const searchIndex = allArticles.map(a => ({
+  id: a.id,
+  t: a.title ?? '',
+  s: a.subtitle ?? '',
+  ab: a.abstract ?? '',
+  au: (a.author_firstname || a.author_lastname)
+    ? authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })
+    : '',
+  ai: a.author_id ?? 0,
+  m: a.magazine_title,
+  mi: a.magazine_id,
+  e: a.edition_idx,
+  y: a.created_at ? new Date(a.created_at * 1000).getFullYear() : 0,
+}));
+---
+
+<Base
+  title="Pesquisa"
+  description="Pesquisa no arquivo de artigos de arquitetura e urbanismo — Vitruvius"
+>
+  <div class="container search-page">
+    <div class="rule-one">pesquisa</div>
+
+    <form class="search-form" id="search-form">
+      <input type="search" id="q" name="q" placeholder="buscar artigos, autores, temas…" />
+      <button type="submit">buscar</button>
+    </form>
+
+    <div class="search-filters">
+      <label>filtrar por:</label>
+
+      <select id="f-magazine" name="magazine">
+        <option value="">todas as revistas</option>
+        {magazines.map(m => (
+          <option value={m.title}>{m.title}</option>
+        ))}
+      </select>
+
+      <select id="f-year-from" name="from">
+        <option value="">a partir de…</option>
+        {Array.from({ length: 26 }, (_, i) => 2000 + i).map(y => (
+          <option value={y}>{y}</option>
+        ))}
+      </select>
+
+      <select id="f-year-to" name="to">
+        <option value="">até…</option>
+        {Array.from({ length: 26 }, (_, i) => 2025 - i).map(y => (
+          <option value={y}>{y}</option>
+        ))}
+      </select>
+
+      <button id="clear-filters" type="button"
+        style="font-size:0.78rem;border:none;background:none;cursor:pointer;text-decoration:underline;">
+        limpar
+      </button>
+    </div>
+
+    <div id="search-status"></div>
+
+    <ul id="results"></ul>
+  </div>
+</Base>
+
+<!-- Embed the index as JSON; the client script does all filtering -->
+<script
+  id="search-data"
+  type="application/json"
+  set:html={JSON.stringify(searchIndex)}
+/>
+
+<script>
+  const raw = document.getElementById('search-data')!.textContent!;
+  const INDEX: any[] = JSON.parse(raw);
+
+  const qEl      = document.getElementById('q') as HTMLInputElement;
+  const magEl    = document.getElementById('f-magazine') as HTMLSelectElement;
+  const fromEl   = document.getElementById('f-year-from') as HTMLSelectElement;
+  const toEl     = document.getElementById('f-year-to') as HTMLSelectElement;
+  const clearBtn = document.getElementById('clear-filters') as HTMLButtonElement;
+  const statusEl = document.getElementById('search-status')!;
+  const resultEl = document.getElementById('results')!;
+
+  // ── URL ↔ state ────────────────────────────────────────────────────────────
+
+  function readUrl() {
+    const p = new URLSearchParams(location.search);
+    qEl.value      = p.get('q')       ?? '';
+    magEl.value    = p.get('magazine') ?? '';
+    fromEl.value   = p.get('from')    ?? '';
+    toEl.value     = p.get('to')      ?? '';
+  }
+
+  function writeUrl() {
+    const p = new URLSearchParams();
+    if (qEl.value.trim())    p.set('q', qEl.value.trim());
+    if (magEl.value)         p.set('magazine', magEl.value);
+    if (fromEl.value)        p.set('from', fromEl.value);
+    if (toEl.value)          p.set('to', toEl.value);
+    const qs = p.toString();
+    const newUrl = qs ? `${location.pathname}?${qs}` : location.pathname;
+    history.pushState(null, '', newUrl);
+  }
+
+  // ── Search ─────────────────────────────────────────────────────────────────
+
+  function search() {
+    const q    = qEl.value.trim().toLowerCase();
+    const mag  = magEl.value;
+    const from = fromEl.value ? Number(fromEl.value) : 0;
+    const to   = toEl.value   ? Number(toEl.value)   : 9999;
+
+    if (!q && !mag && !from && to === 9999) {
+      statusEl.textContent = '';
+      resultEl.innerHTML = '';
+      return;
+    }
+
+    const terms = q.split(/\s+/).filter(Boolean);
+
+    const results = INDEX.filter(a => {
+      if (mag  && a.m !== mag)       return false;
+      if (from && a.y < from)        return false;
+      if (to < 9999 && a.y > to)     return false;
+      if (terms.length === 0)        return true;
+      const haystack = `${a.t} ${a.s} ${a.ab} ${a.au}`.toLowerCase();
+      return terms.every(term => haystack.includes(term));
+    }).slice(0, 100);
+
+    statusEl.textContent = results.length === 0
+      ? 'Nenhum resultado encontrado.'
+      : `${results.length} resultado${results.length !== 1 ? 's' : ''}`;
+
+    const LABELS: Record<string, string> = {
+      arquitextos:    'arquitextos',
+      arquiteturismo: 'arquiteturismo',
+      drops:          'drops',
+      minhacidade:    'minha cidade',
+      entrevista:     'entrevista',
+      projetos:       'projetos',
+      resenhasonline: 'resenhas online',
+    };
+
+    resultEl.innerHTML = results.map(a => `
+      <li class="search-result">
+        <a class="sr-title" href="/revistas/read/${a.m}/${a.e}/${a.id}">${escHtml(a.t)}</a>
+        <div class="sr-meta">
+          <span class="mag">${escHtml(LABELS[a.m] ?? a.m)}</span>
+          · ed. ${escHtml(a.e)}
+          ${a.au && a.ai ? `· <a href="/autor/${a.ai}">${escHtml(a.au)}</a>` : a.au ? `· ${escHtml(a.au)}` : ''}
+          ${a.y ? `· ${a.y}` : ''}
+        </div>
+        ${a.ab ? `<p class="sr-abstract">${escHtml(a.ab.slice(0, 200))}…</p>` : ''}
+      </li>
+    `).join('');
+  }
+
+  function escHtml(s: string) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Events ─────────────────────────────────────────────────────────────────
+
+  document.getElementById('search-form')!.addEventListener('submit', e => {
+    e.preventDefault();
+    writeUrl();
+    search();
+  });
+
+  [magEl, fromEl, toEl].forEach(el =>
+    el.addEventListener('change', () => { writeUrl(); search(); })
+  );
+
+  clearBtn.addEventListener('click', () => {
+    qEl.value = magEl.value = fromEl.value = toEl.value = '';
+    writeUrl();
+    search();
+  });
+
+  window.addEventListener('popstate', () => { readUrl(); search(); });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  readUrl();
+  search();
+</script>

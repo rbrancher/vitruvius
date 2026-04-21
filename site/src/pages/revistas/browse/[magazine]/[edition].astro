@@ -1,0 +1,113 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import {
+  getMagazines, getMagazineByTitle, getEditionsByMagazine,
+  getEditionByIdx, getPublishedArticlesByEdition, authorFullName,
+} from '../../../../lib/db';
+import { stripHtml } from '../../../../lib/text';
+
+export async function getStaticPaths() {
+  const paths = [];
+  for (const mag of getMagazines()) {
+    for (const ed of getEditionsByMagazine(mag.id)) {
+      paths.push({ params: { magazine: mag.title, edition: ed.idx } });
+    }
+  }
+  return paths;
+}
+
+const { magazine: magazineSlug, edition: editionIdx } = Astro.params;
+const magazine = getMagazineByTitle(magazineSlug)!;
+const editions = getEditionsByMagazine(magazine.id);
+const edition = getEditionByIdx(magazine.id, editionIdx)!;
+const articles = getPublishedArticlesByEdition(edition.id);
+
+const edIdx = editions.findIndex(e => e.id === edition.id);
+const prevEd = edIdx < editions.length - 1 ? editions[edIdx + 1] : null;
+const nextEd = edIdx > 0 ? editions[edIdx - 1] : null;
+
+const LABELS: Record<string, string> = {
+  arquitextos:    'arquitextos',
+  arquiteturismo: 'arquiteturismo',
+  drops:          'drops',
+  minhacidade:    'minha cidade',
+  entrevista:     'entrevista',
+  projetos:       'projetos',
+  resenhasonline: 'resenhas online',
+};
+const label = LABELS[magazineSlug] ?? magazineSlug;
+const publishedYear = edition.published_at
+  ? new Date(edition.published_at * 1000).getFullYear()
+  : null;
+
+// Two columns
+const half = Math.ceil(articles.length / 2);
+const col1 = articles.slice(0, half);
+const col2 = articles.slice(half);
+---
+
+<Base
+  title={`${label} ${editionIdx}`}
+  description={`${label} edição ${editionIdx} — ${articles.length} artigos`}
+  magazine={magazineSlug}
+  editionIdx={editionIdx}
+>
+  <div class="container" style="padding-top:12px;">
+    <nav class="breadcrumb">
+      <a href="/revistas">revistas</a>
+      <span class="sep">›</span>
+      <a href={`/revistas/browse/${magazineSlug}`}>{label}</a>
+      <span class="sep">›</span>
+      <span>{editionIdx}</span>
+    </nav>
+
+    <div class="edition-page">
+      <div class="edition-page-header">
+        <span class="edition-idx">edição {editionIdx}{publishedYear && ` · ${publishedYear}`}</span>
+        <nav class="edition-nav">
+          {prevEd && <a href={`/revistas/browse/${magazineSlug}/${prevEd.idx}`}>← {prevEd.idx}</a>}
+          {nextEd && <a href={`/revistas/browse/${magazineSlug}/${nextEd.idx}`}>{nextEd.idx} →</a>}
+        </nav>
+      </div>
+
+      <div class="edition-columns">
+        <div class="edition-col">
+          {col1.map(a => (
+            <div class="article-entry">
+              <a class="entry-title"
+                 href={`/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`}
+                 set:html={a.title} />
+              {a.subtitle && <div class="entry-subtitle" set:html={a.subtitle} />}
+              {(a.author_firstname || a.author_lastname) && (
+                <div class="entry-author">
+                  {authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })}
+                  {a.author_institution && ` — ${a.author_institution}`}
+                </div>
+              )}
+              {a.abstract && <div class="entry-abstract" set:html={a.abstract} />}
+            </div>
+          ))}
+        </div>
+        {col2.length > 0 && (
+          <div class="edition-col">
+            {col2.map(a => (
+              <div class="article-entry">
+                <a class="entry-title"
+                   href={`/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`}
+                   set:html={a.title} />
+                {a.subtitle && <div class="entry-subtitle" set:html={a.subtitle} />}
+                {(a.author_firstname || a.author_lastname) && (
+                  <div class="entry-author">
+                    {authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })}
+                    {a.author_institution && ` — ${a.author_institution}`}
+                  </div>
+                )}
+                {a.abstract && <div class="entry-abstract" set:html={a.abstract} />}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,62 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { getMagazines, getMagazineByTitle, getEditionsByMagazine } from '../../../lib/db';
+
+export async function getStaticPaths() {
+  return getMagazines().map(m => ({ params: { magazine: m.title } }));
+}
+
+const { magazine: magazineSlug } = Astro.params;
+const magazine = getMagazineByTitle(magazineSlug)!;
+const editions = getEditionsByMagazine(magazine.id);
+
+const byYear: Record<string, typeof editions> = {};
+for (const ed of editions) {
+  const year = ed.idx.split('.')[0];
+  if (!byYear[year]) byYear[year] = [];
+  byYear[year].push(ed);
+}
+const years = Object.keys(byYear).sort((a, b) => Number(b) - Number(a));
+
+const LABELS: Record<string, string> = {
+  arquitextos:    'arquitextos',
+  arquiteturismo: 'arquiteturismo',
+  drops:          'drops',
+  minhacidade:    'minha cidade',
+  entrevista:     'entrevista',
+  projetos:       'projetos',
+  resenhasonline: 'resenhas online',
+};
+const label = LABELS[magazineSlug] ?? magazineSlug;
+---
+
+<Base
+  title={label}
+  description={`Todas as edições de ${label} — arquivo Vitruvius`}
+  magazine={magazineSlug}
+>
+  <div class="container" style="padding-top:12px;">
+    <nav class="breadcrumb">
+      <a href="/revistas">revistas</a>
+      <span class="sep">›</span>
+      <span>{label}</span>
+    </nav>
+
+    <div class="rule-one">{label} — {editions.length} edições · {magazine.issn}</div>
+
+    <div class="edition-index">
+      {years.map(year => (
+        <div class="edition-year-group">
+          <div class="edition-year-label">ano {year}</div>
+          <div class="edition-chips">
+            {byYear[year].map(ed => (
+              <a class="edition-chip" href={`/revistas/browse/${magazineSlug}/${ed.idx}`}>
+                {ed.idx}
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</Base>

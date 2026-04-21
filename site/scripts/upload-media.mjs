@@ -16,7 +16,7 @@ import { join, relative } from 'path';
 import { lookup as mimeLookup } from 'mime-types';
 
 const BUCKET   = 'vitruvius-media';
-const MEDIA_DIR = new URL('../public/media', import.meta.url).pathname;
+const MEDIA_DIR = new URL('../../media', import.meta.url).pathname;
 
 const { R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, CF_ACCOUNT_ID } = process.env;
 if (!R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !CF_ACCOUNT_ID) {

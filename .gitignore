@@ -6,7 +6,7 @@ dist/
 .astro/
 
 # Media assets (served from R2 / local disk, not tracked in git)
-site/public/media/
+media/
 
 # Database (binary, managed separately)
 *.db

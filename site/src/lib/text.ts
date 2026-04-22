@@ -71,9 +71,10 @@ export function processArticleBody(
     const img = imageMap.get(id);
     if (!img?.src) return '';
     const caption = img.caption || img.credit || '';
+    const altText = stripHtml(caption);
     return `<figure class="inline-figure">
-  <img src="${imageUrl(img.src, 'grid_9')}" alt="${escAttr(caption)}" loading="lazy" />
-  ${caption ? `<figcaption>${escHtml(caption)}</figcaption>` : ''}
+  <img src="${imageUrl(img.src, 'grid_9')}" alt="${escAttr(altText)}" loading="lazy" />
+  ${caption ? `<figcaption>${caption}</figcaption>` : ''}
 </figure>`;
   });
 

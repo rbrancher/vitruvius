@@ -1,6 +1,6 @@
 ---
 import type { Image } from '../lib/db';
-import { imageUrl } from '../lib/text';
+import { imageUrl, stripHtml } from '../lib/text';
 
 interface Props {
   images: Image[];
@@ -11,6 +11,7 @@ const items = images.map(img => ({
   main:    imageUrl(img.src, 'grid_9'),
   thumb:   imageUrl(img.src, 'gallery_thumb'),
   caption: img.caption || img.credit || '',
+  alt:     stripHtml(img.caption || img.credit || ''),
 }));
 
 const first = items[0];
@@ -18,13 +19,13 @@ const first = items[0];
 
 <div class="ag" data-gallery={JSON.stringify(items)}>
   <div class="ag-stage">
-    <img class="ag-main-img" src={first.main} alt={first.caption} />
+    <img class="ag-main-img" src={first.main} alt={first.alt} />
     <button class="ag-prev" aria-label="anterior"></button>
     <button class="ag-next" aria-label="próximo"></button>
   </div>
 
   <div class="ag-infobar">
-    <div class="ag-caption">{first.caption}</div>
+    <div class="ag-caption" set:html={first.caption} />
     <div class="ag-counter">1 / {items.length}</div>
   </div>
 
@@ -35,7 +36,7 @@ const first = items[0];
         <div class="ag-thumb-track">
           {items.map((img, i) => (
             <button class={`ag-thumb${i === 0 ? ' active' : ''}`} data-index={i}>
-              <img src={img.thumb} alt={img.caption} loading="lazy" />
+              <img src={img.thumb} alt={img.alt} loading="lazy" />
             </button>
           ))}
         </div>
@@ -47,7 +48,7 @@ const first = items[0];
 
 <script>
 document.querySelectorAll<HTMLElement>('.ag[data-gallery]').forEach(gallery => {
-  const items: { main: string; thumb: string; caption: string }[] =
+  const items: { main: string; thumb: string; caption: string; alt: string }[] =
     JSON.parse(gallery.dataset.gallery!);
   const total = items.length;
   let current = 0;
@@ -65,8 +66,8 @@ document.querySelectorAll<HTMLElement>('.ag[data-gallery]').forEach(gallery => {
     current = index;
     const item = items[current];
     mainImg.src = item.main;
-    mainImg.alt = item.caption;
-    caption.textContent = item.caption;
+    mainImg.alt = item.alt;
+    caption.innerHTML = item.caption;
     counter.textContent = `${current + 1} / ${total}`;
     thumbs.forEach((t, i) => t.classList.toggle('active', i === current));
 

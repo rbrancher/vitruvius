@@ -2,9 +2,10 @@
 import Base from '../../../../layouts/Base.astro';
 import {
   getMagazines, getMagazineByTitle, getEditionsByMagazine,
-  getEditionByIdx, getPublishedArticlesByEdition, authorFullName,
+  getEditionByIdx, getPublishedArticlesByEdition, getEditionCoverImages,
+  authorFullName,
 } from '../../../../lib/db';
-import { stripHtml } from '../../../../lib/text';
+import { stripHtml, imageUrl } from '../../../../lib/text';
 
 export async function getStaticPaths() {
   const paths = [];
@@ -21,6 +22,7 @@ const magazine = getMagazineByTitle(magazineSlug)!;
 const editions = getEditionsByMagazine(magazine.id);
 const edition = getEditionByIdx(magazine.id, editionIdx)!;
 const articles = getPublishedArticlesByEdition(edition.id);
+const coverImages = getEditionCoverImages(edition.id);
 
 const edIdx = editions.findIndex(e => e.id === edition.id);
 const prevEd = edIdx < editions.length - 1 ? editions[edIdx + 1] : null;
@@ -36,11 +38,20 @@ const LABELS: Record<string, string> = {
   resenhasonline: 'resenhas online',
 };
 const label = LABELS[magazineSlug] ?? magazineSlug;
-const publishedYear = edition.published_at
-  ? new Date(edition.published_at * 1000).getFullYear()
-  : null;
+const publishedDate = edition.published_at ? new Date(edition.published_at * 1000) : null;
+const publishedYear = publishedDate?.getFullYear() ?? null;
+const PT_MONTHS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const edParts = editionIdx.split('.');
+const edYear2 = edParts[0] ?? '';
+const edNum   = edParts[1] ?? editionIdx;
+const edInfo = publishedDate
+  ? `ano ${edYear2}, ${PT_MONTHS[publishedDate.getMonth()]}. ${publishedYear}`
+  : publishedYear ? `· ${publishedYear}` : null;
 
-// Two columns
+// Pick first article with a cover as the default displayed image
+const defaultArticle = articles.find(a => coverImages.has(a.id));
+
+// Two article columns (right two columns)
 const half = Math.ceil(articles.length / 2);
 const col1 = articles.slice(0, half);
 const col2 = articles.slice(half);
@@ -53,27 +64,52 @@ const col2 = articles.slice(half);
   editionIdx={editionIdx}
 >
 
-    <nav class="breadcrumb">
-      <a href="/revistas">revistas</a>
-      <span class="sep">›</span>
-      <a href={`/revistas/browse/${magazineSlug}`}>{label}</a>
-      <span class="sep">›</span>
-      <span>{editionIdx}</span>
-    </nav>
-
     <div class="edition-page">
       <div class="edition-page-header">
-        <span class="edition-idx">edição {editionIdx}{publishedYear && ` · ${publishedYear}`}</span>
+        <span class="edition-idx">{edNum}{edInfo && <span class="edition-info"> {edInfo}</span>}</span>
         <nav class="edition-nav">
-          {prevEd && <a href={`/revistas/browse/${magazineSlug}/${prevEd.idx}`}>← {prevEd.idx}</a>}
-          {nextEd && <a href={`/revistas/browse/${magazineSlug}/${nextEd.idx}`}>{nextEd.idx} →</a>}
+          {prevEd && <a href={`/revistas/browse/${magazineSlug}/${prevEd.idx}`}>&lt; {prevEd.idx.split('.')[1] ?? prevEd.idx}</a>}
+          {nextEd && <a href={`/revistas/browse/${magazineSlug}/${nextEd.idx}`}>{nextEd.idx.split('.')[1] ?? nextEd.idx} &gt;</a>}
         </nav>
       </div>
 
-      <div class="edition-columns">
+      <div class="edition-layout">
+
+        <!-- Left column: one cover image + synopsis at a time -->
+        <div class="ed-cover-panel">
+          {articles.map(a => {
+            const src = coverImages.get(a.id);
+            if (!src) return null;
+            const isDefault = a.id === defaultArticle?.id;
+            return (
+              <img
+                id={`img-article-${a.id}`}
+                class={`ed-cover-img${isDefault ? ' is-default' : ' hidden-cover'}`}
+                src={imageUrl(src, 'grid_9')}
+                alt={stripHtml(a.title)}
+                loading="lazy"
+              />
+            );
+          })}
+          <div class="ed-synopsis">
+            {articles.map(a => {
+              const synopsis = stripHtml(a.lead ?? '').trim();
+              if (!synopsis) return null;
+              const isDefault = a.id === defaultArticle?.id;
+              return (
+                <p
+                  id={`synopsis-${a.id}`}
+                  class={`ed-synopsis-text${isDefault ? ' is-default' : ' hidden-synopsis'}`}
+                >{synopsis}</p>
+              );
+            })}
+          </div>
+        </div>
+
+        <!-- Col 2 -->
         <div class="edition-col">
           {col1.map(a => (
-            <div class="article-entry">
+            <div class={`article-entry${a.id === defaultArticle?.id ? ' is-active' : ''}`} data-id={a.id}>
               <a class="entry-title"
                  href={`/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`}
                  set:html={a.title} />
@@ -84,30 +120,98 @@ const col2 = articles.slice(half);
                   {a.author_institution && ` — ${a.author_institution}`}
                 </div>
               )}
-              {a.abstract && <div class="entry-abstract" set:html={a.abstract} />}
             </div>
           ))}
         </div>
-        {col2.length > 0 && (
-          <div class="edition-col">
-            {col2.map(a => (
-              <div class="article-entry">
-                <a class="entry-title"
-                   href={`/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`}
-                   set:html={a.title} />
-                {a.subtitle && <div class="entry-subtitle" set:html={a.subtitle} />}
-                {(a.author_firstname || a.author_lastname) && (
-                  <div class="entry-author">
-                    {authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })}
-                    {a.author_institution && ` — ${a.author_institution}`}
-                  </div>
-                )}
-                {a.abstract && <div class="entry-abstract" set:html={a.abstract} />}
-              </div>
-            ))}
-          </div>
-        )}
+
+        <!-- Col 3 -->
+        <div class="edition-col">
+          {col2.map(a => (
+            <div class={`article-entry${a.id === defaultArticle?.id ? ' is-active' : ''}`} data-id={a.id}>
+              <a class="entry-title"
+                 href={`/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`}
+                 set:html={a.title} />
+              {a.subtitle && <div class="entry-subtitle" set:html={a.subtitle} />}
+              {(a.author_firstname || a.author_lastname) && (
+                <div class="entry-author">
+                  {authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })}
+                  {a.author_institution && ` — ${a.author_institution}`}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
       </div>
     </div>
-  </div>
+
+    <script>
+      const panel = document.querySelector('.ed-cover-panel');
+      if (panel) {
+        const allImgs = Array.from(panel.querySelectorAll<HTMLImageElement>('.ed-cover-img'));
+        const randomImg = allImgs.length
+          ? allImgs[Math.floor(Math.random() * allImgs.length)]
+          : panel.querySelector<HTMLImageElement>('.ed-cover-img.is-default');
+        const defaultImg = randomImg;
+        const defaultId  = defaultImg?.id.replace('img-article-', '') ?? null;
+        const defaultSyn = defaultId
+          ? panel.querySelector<HTMLElement>(`#synopsis-${defaultId}`)
+          : panel.querySelector<HTMLElement>('.ed-synopsis-text.is-default');
+        const allEntries  = document.querySelectorAll<HTMLElement>('.article-entry[data-id]');
+
+        function activate(id: string | null) {
+          // images
+          panel.querySelectorAll<HTMLImageElement>('.ed-cover-img').forEach(i => {
+            i.classList.add('hidden-cover');
+            i.classList.remove('hovered');
+          });
+          const img = id ? panel.querySelector<HTMLImageElement>(`#img-article-${id}`) : null;
+          const shown = img ?? defaultImg;
+          if (shown) { shown.classList.remove('hidden-cover'); shown.classList.add('hovered'); }
+
+          // synopsis
+          panel.querySelectorAll<HTMLElement>('.ed-synopsis-text').forEach(p => p.classList.add('hidden-synopsis'));
+          const syn = id ? panel.querySelector<HTMLElement>(`#synopsis-${id}`) : null;
+          const shownSyn = syn ?? defaultSyn;
+          shownSyn?.classList.remove('hidden-synopsis');
+
+          // entry dimming
+          allEntries.forEach(e => {
+            e.classList.toggle('is-active', e.dataset.id === (id ?? defaultImg?.id.replace('img-article-', '')));
+          });
+        }
+
+        function restore() {
+          // images
+          panel.querySelectorAll<HTMLImageElement>('.ed-cover-img').forEach(i => {
+            i.classList.add('hidden-cover');
+            i.classList.remove('hovered');
+          });
+          defaultImg?.classList.remove('hidden-cover');
+
+          // synopsis
+          panel.querySelectorAll<HTMLElement>('.ed-synopsis-text').forEach(p => p.classList.add('hidden-synopsis'));
+          defaultSyn?.classList.remove('hidden-synopsis');
+
+          // restore default active entry
+          const defaultId = defaultImg?.id.replace('img-article-', '');
+          allEntries.forEach(e => e.classList.toggle('is-active', e.dataset.id === defaultId));
+        }
+
+        // Apply random initial state
+        restore();
+
+        allEntries.forEach(entry => {
+          entry.addEventListener('mouseenter', () => activate(entry.dataset.id ?? null));
+          entry.addEventListener('mouseleave', restore);
+        });
+
+        panel.addEventListener('mouseenter', () => {
+          panel.querySelector<HTMLImageElement>('.ed-cover-img:not(.hidden-cover)')?.classList.add('hovered');
+        });
+        panel.addEventListener('mouseleave', () => {
+          panel.querySelectorAll<HTMLImageElement>('.ed-cover-img').forEach(i => i.classList.remove('hovered'));
+        });
+      }
+    </script>
 </Base>

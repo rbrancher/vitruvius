@@ -36,12 +36,6 @@ const label = LABELS[magazineSlug] ?? magazineSlug;
   magazine={magazineSlug}
 >
 
-    <nav class="breadcrumb">
-      <a href="/revistas">revistas</a>
-      <span class="sep">›</span>
-      <span>{label}</span>
-    </nav>
-
     <div class="rule-one">{label} — {editions.length} edições · {magazine.issn}</div>
 
     <div class="edition-index">

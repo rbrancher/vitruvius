@@ -193,6 +193,22 @@ export function getArticleImages(articleId: number): Image[] {
   `).all(articleId) as Image[];
 }
 
+export function getEditionCoverImages(editionId: number): Map<number, string> {
+  const rows = getDb().prepare(`
+    SELECT ai.article_id, i.src
+    FROM articles a
+    JOIN articles_images ai ON ai.article_id = a.id
+    JOIN images i ON i.id = ai.image_id
+    WHERE a.edition_id = ? AND i.is_cover = 1
+    ORDER BY i.img_order ASC NULLS LAST, i.id ASC
+  `).all(editionId) as { article_id: number; src: string }[];
+  const map = new Map<number, string>();
+  for (const row of rows) {
+    if (!map.has(row.article_id)) map.set(row.article_id, row.src);
+  }
+  return map;
+}
+
 export function getArticleTags(articleId: number): Tag[] {
   return getDb().prepare(`
     SELECT t.* FROM articles_tags at_

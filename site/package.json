@@ -8,7 +8,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "deploy": "astro build && wrangler pages deploy dist --project-name vitruvius",
-    "upload-media": "node --env-file=.env scripts/upload-media.mjs"
+    "upload-media": "node --env-file=.env scripts/upload-media.mjs",
+    "sync-media": "node --env-file=.env scripts/server-to-r2.mjs"
   },
   "dependencies": {
     "@pagefind/default-ui": "^1.5.2",

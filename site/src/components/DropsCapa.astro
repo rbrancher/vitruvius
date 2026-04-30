@@ -1,0 +1,116 @@
+---
+import { stripHtml, imageUrl } from '../lib/text';
+
+interface Props {
+  articles:    any[];
+  coverImages: Map<number, string>;
+  edNum:       string;
+  magazineSlug: string;
+  editionIdx:  string;
+}
+const { articles, coverImages, edNum, magazineSlug, editionIdx } = Astro.props;
+
+const upperArticles = articles.filter((_, i) => i % 2 === 0);
+const lowerArticles = articles.filter((_, i) => i % 2 !== 0);
+---
+
+<div class="drops-layout">
+
+  <!-- Upper titles: 1st, 3rd, 5th… articles -->
+  <div class="drops-upper-titles">
+    <div class="drops-title-spacer"></div>
+    {upperArticles.map(a => (
+      <div class="drops-title-cell" data-id={a.id}>
+        {(a.idx || a.section) && <div class="drops-title-index">{edNum}{a.idx ? `.${a.idx}` : ''}{a.section ? ` ${a.section}` : ''}</div>}
+        <a href={`/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`} set:html={a.title} />
+      </div>
+    ))}
+  </div>
+
+  <!-- Filmstrip -->
+  <div class="drops-strip">
+    <div class="drops-cap drops-cap--first">drops<br/>{edNum}</div>
+    {articles.map(a => {
+      const src = coverImages.get(a.id);
+      return (
+        <div class="drops-strip-entry" data-id={a.id}>
+          <a href={`/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`}>
+            {src
+              ? <img class="drops-img" src={imageUrl(src, 'grid_1')} alt={stripHtml(a.title)} loading="lazy" />
+              : <div class="drops-noimage" />}
+          </a>
+        </div>
+      );
+    })}
+    <div class="drops-cap drops-cap--last"></div>
+  </div>
+
+  <!-- Lower titles: 2nd, 4th, 6th… articles -->
+  <div class="drops-lower-titles">
+    <div class="drops-title-spacer"></div>
+    {lowerArticles.map(a => (
+      <div class="drops-title-cell drops-title-cell--bottom" data-id={a.id}>
+        <div class="drops-title-inner">
+          {(a.idx || a.section) && <div class="drops-title-index">{edNum}{a.idx ? `.${a.idx}` : ''}{a.section ? ` ${a.section}` : ''}</div>}
+          <a href={`/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`} set:html={a.title} />
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <!-- Leads: hidden, positioned under entry by JS, shown on hover -->
+  <div class="drops-lead-area">
+    {articles.map(a => {
+      const lead = stripHtml(a.lead ?? '').trim();
+      return lead ? (
+        <p class="drops-lead" data-id={a.id}>{lead}</p>
+      ) : null;
+    })}
+  </div>
+
+</div>
+
+<script>
+  const layout = document.querySelector<HTMLElement>('.drops-layout');
+  if (layout) {
+    const strip    = layout.querySelector<HTMLElement>('.drops-strip')!;
+    const leadArea = layout.querySelector<HTMLElement>('.drops-lead-area')!;
+    const allLeads = Array.from(layout.querySelectorAll<HTMLElement>('.drops-lead'));
+
+    // Equalize all title cell heights to the tallest one
+    const allCells = Array.from(layout.querySelectorAll<HTMLElement>('.drops-title-cell'));
+    allCells.forEach(c => { c.style.height = 'auto'; });
+    const maxCellH = Math.max(...allCells.map(c => c.scrollHeight));
+    allCells.forEach(c => { c.style.height = maxCellH + 'px'; });
+
+    const leadPositions = allLeads.map(lead => {
+      const entry = strip.querySelector<HTMLElement>(`.drops-strip-entry[data-id="${lead.dataset.id}"]`);
+      return entry ? entry.getBoundingClientRect().left - leadArea.getBoundingClientRect().left - 60 : 0;
+    });
+    const maxLeadLeft = leadPositions.length >= 6 ? leadPositions[5] : Infinity;
+    allLeads.forEach((lead, i) => {
+      lead.style.left = Math.min(leadPositions[i], maxLeadLeft) + 'px';
+    });
+
+    const targets = Array.from(layout.querySelectorAll<HTMLElement>('.drops-strip-entry, .drops-title-cell'));
+
+    function activate(id: string) {
+      layout.querySelectorAll<HTMLImageElement>(`.drops-strip-entry[data-id="${id}"] .drops-img`)
+        .forEach(img => img.classList.add('drops-img--active'));
+      layout.querySelectorAll<HTMLElement>(`.drops-title-cell[data-id="${id}"]`)
+        .forEach(el => el.classList.add('drops-title-cell--active'));
+      allLeads.forEach(l => l.style.display = l.dataset.id === id ? 'block' : 'none');
+    }
+
+    function deactivate() {
+      layout.querySelectorAll<HTMLImageElement>('.drops-img').forEach(img => img.classList.remove('drops-img--active'));
+      layout.querySelectorAll<HTMLElement>('.drops-title-cell').forEach(el => el.classList.remove('drops-title-cell--active'));
+      allLeads.forEach(l => l.style.display = 'none');
+    }
+
+    targets.forEach(el => {
+      el.addEventListener('mouseenter', () => activate(el.dataset.id!));
+      el.addEventListener('mouseleave', deactivate);
+    });
+  }
+</script>

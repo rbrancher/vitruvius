@@ -384,7 +384,7 @@ main { border-top: 1px solid #ccc; }
 .edition-page { padding: 0; }
 .edition-page-header {
   border-top: 4px solid var(--mag-color);
-  padding-top: 6px;
+  padding-top: 2px;
   margin-bottom: 10px;
   display: flex;
   align-items: baseline;
@@ -405,6 +405,9 @@ main { border-top: 1px solid #ccc; }
   gap: 0 24px;
   align-items: start;
 }
+[data-magazine="arquiteturismo"] .edition-layout {
+  grid-template-columns: 5fr 2fr 2fr;
+}
 .ed-cover-panel { position: relative; }
 .ed-cover-img {
   display: block;
@@ -418,6 +421,120 @@ main { border-top: 1px solid #ccc; }
 .ed-synopsis { margin-top: 8px; }
 .ed-synopsis-text { color: #555; line-height: 1.5; margin: 0; }
 .hidden-synopsis { display: none; }
+
+/* ── Arquiteturismo edition banner ── */
+.arqtur-banner {
+  position: relative;
+  overflow: hidden;
+  height: 80px;
+  margin-bottom: 10px;
+  background: #eee;
+  cursor: pointer;
+}
+.arqtur-banner-img {
+  display: block;
+  max-width: none;
+  height: 80px;
+  transition: transform 0.75s ease;
+}
+.arqtur-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 28px;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  pointer-events: none;
+  transition: opacity 0.3s;
+  line-height: 1;
+}
+.arqtur-arrow--right { right: 10px; opacity: 1; }
+.arqtur-arrow--left  { left: 10px;  opacity: 0; }
+
+/* ── Drops edition filmstrip ── */
+.drops-layout { padding-top: 12px; min-height: 420px; }
+
+.drops-upper-titles,
+.drops-lower-titles { display: flex; overflow: hidden; }
+.drops-upper-titles { margin-top: 8px; align-items: flex-end; }
+.drops-lower-titles { align-items: flex-start; }
+.drops-strip        { display: flex; align-items: stretch; margin-bottom: 0; }
+
+.drops-title-spacer { flex: 0 0 47px; }
+.drops-lower-titles .drops-title-spacer { flex: 0 0 110px; }
+
+.drops-title-cell {
+  flex: 0 0 118px;
+  border-right: 1px solid #666;
+  padding-right: 3px;
+  padding-bottom: 24px;
+  margin-right: 8px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  cursor: default;
+
+  min-height: 80px;
+}
+.drops-title-cell a { color: inherit;}
+.drops-title-cell--bottom { position: relative; padding-bottom: 0; padding-top: 24px; }
+.drops-title-inner { position: absolute; bottom: 0; right: 3px; text-align: right; }
+.drops-title-cell--active a { color: #000; text-decoration: underline; }
+.drops-title-index { color: #666; font-weight: normal; line-height: 1.2; }
+
+.drops-cap {
+  flex: 0 0 102px;
+  background: #1C3664;
+  color: #fff;
+  height: 136px;
+  display: flex;
+  align-items: flex-end;
+  padding: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 24px;
+}
+.drops-cap--last { flex: 0 0 46px; padding: 0; margin-left: 6px; }
+
+.drops-strip-entry {
+  flex: 0 0 56px;
+  height: 136px;
+  overflow: hidden;
+  border-right: 1px solid #666;
+  margin-left: 7px;
+  margin-right: 0px;
+  cursor: pointer;
+}
+.drops-img {
+  display: block;
+  /*width: 47px;*/
+  height: 100%;
+  filter: grayscale(100%);
+  transition: filter 0.2s ease;
+}
+.drops-img--active { filter: none; }
+.drops-noimage { width: 56px; height: 136px; background: #ddd; }
+
+.drops-lead-area {
+  position: relative;
+  min-height: 120px;
+  margin-top: 0px;
+  padding-top: 17px;
+  overflow: display;
+}
+
+.drops-lead {
+  overflow: display;
+  display: none;
+  position: absolute;
+  width: 348px;
+  font-size: 12px;
+  line-height: 16px;
+  color: #333;
+  border-top: 1px solid #666;
+  padding-top: 4px;
+}
 
 /* ── Article gallery ── */
 .ag { margin-bottom: 18px; }
@@ -578,7 +695,7 @@ main { border-top: 1px solid #ccc; }
 }
 
 /* Body text */
-.article-body { color: #333; }
+.article-body { color: #333; padding-top: 12px; }
 .article-body p { margin-top: 0; margin-bottom: 18px; }
 .article-body p:first-child { margin-top: 0; }
 .article-body h2 { font-size: 15px; font-weight: bold; margin: 24px 0 12px; }
@@ -640,7 +757,7 @@ main { border-top: 1px solid #ccc; }
 .meta-data { margin-bottom: 8px; }
 
 /* ── Sidebar ── */
-.article-sidebar .service { color: #666; font-size: 12px; margin-top: 12px; }
+.article-sidebar .service { color: #666; font-size: 12px; margin-top: 0; }
 .article-sidebar .rule-three .info { font-weight: normal; }
 .article-sidebar .rule-three .info a:hover { text-decoration: underline; }
 

@@ -2,10 +2,10 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const DB_PATH = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../vitruvius.db'
-);
+// VITRUVIUS_DB points at another database, e.g. the sample one used by tests.
+const DB_PATH = process.env.VITRUVIUS_DB
+  ? path.resolve(process.env.VITRUVIUS_DB)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../vitruvius.db');
 
 let _db: InstanceType<typeof Database> | null = null;
 

@@ -7,6 +7,15 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "db:fixture": "node scripts/build-fixture-db.mjs",
+    "db:check-schema": "node scripts/check-schema.mjs",
+    "build:fixture": "VITRUVIUS_DB=vitruvius.fixture.db astro build --outDir dist-fixture",
+    "preview:fixture": "astro preview --outDir dist-fixture",
+    "typecheck": "astro check",
+    "test": "vitest run",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots=all",
+    "check": "npm run db:fixture && npm run typecheck && npm test && npm run build:fixture && npm run test:visual",
     "deploy": "astro build && wrangler pages deploy dist --project-name vitruvius",
     "upload-media": "node --env-file=.env scripts/upload-media.mjs",
     "sync-media": "node --env-file=.env scripts/server-to-r2.mjs"
@@ -17,9 +26,13 @@
     "better-sqlite3": "^12.9.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@aws-sdk/client-s3": "^3.1033.0",
+    "@playwright/test": "1.56.1",
     "@types/better-sqlite3": "^7.6.13",
     "mime-types": "^3.0.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7",
     "wrangler": "^4.84.0"
   }
 }

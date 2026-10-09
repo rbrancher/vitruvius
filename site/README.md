@@ -56,3 +56,13 @@ npm run dev       # dev server at localhost:4321
 npm run build     # static build to dist/
 npm run preview   # preview the build locally
 ```
+
+Without the real database, use the sample one in `db/`:
+
+```sh
+npm run db:fixture       # build vitruvius.fixture.db from db/*.sql
+npm run check            # type check, unit tests, sample build, screenshot tests
+npm run test:visual:update   # accept intended visual changes (review them first)
+```
+
+See `../CLAUDE.md` for the change workflow.

@@ -19,6 +19,9 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://localhost:4322',
+    // Ignore each machine's font hinting settings, which change letter widths
+    // and therefore line breaks.
+    launchOptions: { args: ['--font-render-hinting=none', '--disable-lcd-text', '--force-color-profile=srgb'] },
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } } },

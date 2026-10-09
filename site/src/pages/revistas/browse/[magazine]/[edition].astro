@@ -161,17 +161,17 @@ const col2 = articles.slice(half);
 
         function activate(id: string | null) {
           // images
-          panel.querySelectorAll<HTMLImageElement>('.ed-cover-img').forEach(i => {
+          panel!.querySelectorAll<HTMLImageElement>('.ed-cover-img').forEach(i => {
             i.classList.add('hidden-cover');
             i.classList.remove('hovered');
           });
-          const img = id ? panel.querySelector<HTMLImageElement>(`#img-article-${id}`) : null;
+          const img = id ? panel!.querySelector<HTMLImageElement>(`#img-article-${id}`) : null;
           const shown = img ?? defaultImg;
           if (shown) { shown.classList.remove('hidden-cover'); shown.classList.add('hovered'); }
 
           // synopsis
-          panel.querySelectorAll<HTMLElement>('.ed-synopsis-text').forEach(p => p.classList.add('hidden-synopsis'));
-          const syn = id ? panel.querySelector<HTMLElement>(`#synopsis-${id}`) : null;
+          panel!.querySelectorAll<HTMLElement>('.ed-synopsis-text').forEach(p => p.classList.add('hidden-synopsis'));
+          const syn = id ? panel!.querySelector<HTMLElement>(`#synopsis-${id}`) : null;
           const shownSyn = syn ?? defaultSyn;
           shownSyn?.classList.remove('hidden-synopsis');
 
@@ -183,14 +183,14 @@ const col2 = articles.slice(half);
 
         function restore() {
           // images
-          panel.querySelectorAll<HTMLImageElement>('.ed-cover-img').forEach(i => {
+          panel!.querySelectorAll<HTMLImageElement>('.ed-cover-img').forEach(i => {
             i.classList.add('hidden-cover');
             i.classList.remove('hovered');
           });
           defaultImg?.classList.remove('hidden-cover');
 
           // synopsis
-          panel.querySelectorAll<HTMLElement>('.ed-synopsis-text').forEach(p => p.classList.add('hidden-synopsis'));
+          panel!.querySelectorAll<HTMLElement>('.ed-synopsis-text').forEach(p => p.classList.add('hidden-synopsis'));
           defaultSyn?.classList.remove('hidden-synopsis');
 
           // restore default active entry

@@ -5,8 +5,9 @@ Static site rebuild of [Vitruvius](https://vitruvius.com.br), a Brazilian archit
 ## Architecture
 
 - **Framework**: [Astro](https://astro.build) — all pages are statically generated at build time
-- **Data**: SQLite database (`vitruvius.db`, not tracked in git) built from the original site's data export via `scripts/build-db.mjs`
-- **Images**: served from external storage (Cloudflare R2), not tracked in git
+- **Content**: Markdown files in `conteudo/` (articles, editions, authors); format in `conteudo/LEIA-ME.md`
+- **Images**: legacy images on Cloudflare R2; new ones in `public/imagens/`
+- **Deploy**: every merge to `master` publishes to Cloudflare Pages (`.github/workflows/deploy.yml`)
 - **Styling**: custom CSS grid system (12-column, 4 responsive breakpoints) matching the original site's visual language
 
 ## Publications
@@ -27,41 +28,32 @@ The site covers seven magazines:
 
 ```
 site/
-├── public/              # Static assets (logos, favicons); media/ excluded from git
-├── scripts/
-│   └── build-db.mjs     # Imports original data dump into vitruvius.db
+├── conteudo/            # All content, as Markdown (see conteudo/LEIA-ME.md)
+├── public/              # Static assets (logos, favicons, imagens/)
+├── scripts/             # One-time DB export, R2 media upload
 ├── src/
-│   ├── components/      # Shared Astro components (ArticleGallery, etc.)
+│   ├── components/      # Shared Astro components (ArticleGallery, DropsCapa)
 │   ├── layouts/         # Base layout
 │   ├── lib/
-│   │   ├── db.ts        # SQLite queries (better-sqlite3)
+│   │   ├── content.ts   # Reads and validates conteudo/
+│   │   ├── magazines.ts # The seven magazines
 │   │   └── text.ts      # HTML processing, image URL helpers
-│   ├── pages/
-│   │   ├── index.astro
-│   │   ├── autor/       # Author profile pages
-│   │   ├── pesquisa/    # Full-text search
-│   │   └── revistas/    # Magazine browsing and article reading
-│   └── styles/
-│       └── global.css
-└── package.json
+│   ├── pages/           # autor/, pesquisa/, revistas/ …
+│   └── styles/global.css
+└── tests/
+    ├── fixture/conteudo # Small sample content used by tests and screenshots
+    ├── unit/            # Vitest
+    └── visual/          # Playwright screenshot tests
 ```
 
 ## Setup
 
-The database and media files are not included in this repository. To run the site locally you need both.
-
 ```sh
 npm install
-npm run dev       # dev server at localhost:4321
-npm run build     # static build to dist/
-npm run preview   # preview the build locally
-```
-
-Without the real database, use the sample one in `db/`:
-
-```sh
-npm run db:fixture       # build vitruvius.fixture.db from db/*.sql
-npm run check            # type check, unit tests, sample build, screenshot tests
+npm run dev               # dev server at localhost:4321
+npm run build             # static build to dist/
+npm run conteudo:validar  # check the content files
+npm run check             # validation, types, unit tests, sample build, screenshots
 npm run test:visual:update   # accept intended visual changes (review them first)
 ```
 

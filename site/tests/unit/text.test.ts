@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { stripHtml, imageUrl, processArticleBody } from '../../src/lib/text';
-import type { Image } from '../../src/lib/db';
+import type { Image } from '../../src/lib/content';
 
 const R2 = 'https://pub-b2c5a3f3806a4e169a40d2daa5f0f7ad.r2.dev';
 

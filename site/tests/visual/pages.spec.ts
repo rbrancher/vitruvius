@@ -12,6 +12,7 @@ const PAGES: [name: string, path: string][] = [
   ['browse-edition-drops',  '/revistas/browse/drops/23.140'],
   ['article',               '/revistas/read/arquitextos/24.286/101'],
   ['article-short',         '/revistas/read/arquitextos/24.286/102'],
+  ['article-markdown',      '/revistas/read/arquitextos/24.285/105'],
   ['article-drops',         '/revistas/read/drops/23.140/301'],
   ['article-projetos',      '/revistas/read/projetos/20.230/601'],
   ['article-projetos-p2',   '/revistas/read/projetos/20.230/601/2'],
@@ -24,8 +25,8 @@ const PAGES: [name: string, path: string][] = [
   ['numeros',               '/numeros'],
 ];
 
-// Images live on Cloudflare R2. Serve a fixed grey placeholder instead so the
-// tests work offline and screenshots don't depend on remote files.
+// Legacy images live on Cloudflare R2, new ones in public/imagens/. Serve a
+// fixed grey placeholder for both so screenshots don't depend on image files.
 const PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800">
   <rect width="100%" height="100%" fill="#b8b8b8"/>
   <path d="M0 0L1200 800M1200 0L0 800" stroke="#8a8a8a" stroke-width="6"/>
@@ -55,7 +56,7 @@ test.beforeEach(async ({ page }) => {
   });
   // The edition cover page picks a random article to feature; make it fixed.
   await page.addInitScript(() => { Math.random = () => 0; });
-  await page.route(/r2\.dev\//, route =>
+  await page.route(/r2\.dev\/|localhost:4322\/imagens\//, route =>
     route.fulfill({ contentType: 'image/svg+xml', body: PLACEHOLDER }));
 });
 

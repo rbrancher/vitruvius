@@ -5,7 +5,7 @@ import {
   getMagazines, getEditionsByMagazine, getPublishedArticlesByEdition,
   getArticleWithMeta, getArticleImages, getArticlePages, getArticleTags, getArticleAbstracts,
   authorFullName, type Image,
-} from '../../../../../lib/db';
+} from '../../../../../lib/content';
 import { stripHtml, processArticleBody, imageUrl } from '../../../../../lib/text';
 
 export async function getStaticPaths() {
@@ -195,7 +195,7 @@ const jsonLd = {
         {tags.length > 0 && (
           <div class="tags" style="margin-top:16px;">
             {tags.map(t => (
-              <a class="tag" href={`/pesquisa?tag=${t.id}`}>{t.title}</a>
+              <a class="tag" href={`/pesquisa?tag=${encodeURIComponent(t.title)}`}>{t.title}</a>
             ))}
           </div>
         )}

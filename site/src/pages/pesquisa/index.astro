@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getMagazines, getAllPublishedArticles, authorFullName } from '../../lib/db';
+import { getMagazines, getAllPublishedArticles, authorFullName } from '../../lib/content';
 
 // Build the search index at build time; filtering runs client-side against this data.
 const magazines = getMagazines();

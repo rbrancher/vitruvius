@@ -50,6 +50,7 @@ site/
 
 ```sh
 npm install
+npx playwright install chromium   # once per machine: browser for the screenshot tests
 npm run dev               # dev server at localhost:4321
 npm run build             # static build to dist/
 npm run conteudo:validar  # check the content files

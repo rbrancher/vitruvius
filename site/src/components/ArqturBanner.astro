@@ -20,7 +20,9 @@ const { src, alt = 'arquiteturismo' } = Astro.props;
     let panned = false;
 
     function apply() {
-      img.style.transform = panned ? `translateX(-${banner.offsetWidth}px)` : 'translateX(0)';
+      // As in the original: slide by the part of the image that doesn't fit.
+      const hidden = Math.max(0, img.offsetWidth - banner.offsetWidth);
+      img.style.transform = panned ? `translateX(-${hidden}px)` : 'translateX(0)';
       arrowL.style.opacity = panned ? '1' : '0';
       arrowR.style.opacity = panned ? '0' : '1';
     }

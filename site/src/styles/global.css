@@ -426,7 +426,7 @@ main { border-top: 1px solid #ccc; }
 .arqtur-banner {
   position: relative;
   overflow: hidden;
-  height: 80px;
+  height: 152px;
   margin-bottom: 10px;
   background: #eee;
   cursor: pointer;
@@ -434,7 +434,8 @@ main { border-top: 1px solid #ccc; }
 .arqtur-banner-img {
   display: block;
   max-width: none;
-  height: 80px;
+  /* arqtur_edition images are 1068x152, shown at full size as in the original */
+  height: 152px;
   transition: transform 0.75s ease;
 }
 .arqtur-arrow {

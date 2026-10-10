@@ -35,6 +35,11 @@ const PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height
   <path d="M0 0L1200 800M1200 0L0 800" stroke="#8a8a8a" stroke-width="6"/>
 </svg>`;
 
+const BANNER_PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="1068" height="152">
+  <rect width="100%" height="100%" fill="#9fb3c8"/>
+  <path d="M0 0L1068 152M1068 0L0 152" stroke="#6b829a" stroke-width="4"/>
+</svg>`;
+
 // The site's font is 'Courier New', which each machine substitutes with
 // whatever it has installed. Bundle one font (Liberation Mono, same metrics)
 // so screenshots look identical on every machine and in CI.
@@ -61,6 +66,9 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => { Math.random = () => 0; });
   await page.route(/r2\.dev\/|localhost:4322\/imagens\//, route =>
     route.fulfill({ contentType: 'image/svg+xml', body: PLACEHOLDER }));
+  // Registered last, so matched first: arquiteturismo banners are 1068x152.
+  await page.route(/r2\.dev\/.*\/arqtur_edition\//, route =>
+    route.fulfill({ contentType: 'image/svg+xml', body: BANNER_PLACEHOLDER }));
 });
 
 for (const [name, url] of PAGES) {

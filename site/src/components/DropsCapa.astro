@@ -95,16 +95,16 @@ const lowerArticles = articles.filter((_, i) => i % 2 !== 0);
     const targets = Array.from(layout.querySelectorAll<HTMLElement>('.drops-strip-entry, .drops-title-cell'));
 
     function activate(id: string) {
-      layout.querySelectorAll<HTMLImageElement>(`.drops-strip-entry[data-id="${id}"] .drops-img`)
+      layout!.querySelectorAll<HTMLImageElement>(`.drops-strip-entry[data-id="${id}"] .drops-img`)
         .forEach(img => img.classList.add('drops-img--active'));
-      layout.querySelectorAll<HTMLElement>(`.drops-title-cell[data-id="${id}"]`)
+      layout!.querySelectorAll<HTMLElement>(`.drops-title-cell[data-id="${id}"]`)
         .forEach(el => el.classList.add('drops-title-cell--active'));
       allLeads.forEach(l => l.style.display = l.dataset.id === id ? 'block' : 'none');
     }
 
     function deactivate() {
-      layout.querySelectorAll<HTMLImageElement>('.drops-img').forEach(img => img.classList.remove('drops-img--active'));
-      layout.querySelectorAll<HTMLElement>('.drops-title-cell').forEach(el => el.classList.remove('drops-title-cell--active'));
+      layout!.querySelectorAll<HTMLImageElement>('.drops-img').forEach(img => img.classList.remove('drops-img--active'));
+      layout!.querySelectorAll<HTMLElement>('.drops-title-cell').forEach(el => el.classList.remove('drops-title-cell--active'));
       allLeads.forEach(l => l.style.display = 'none');
     }
 

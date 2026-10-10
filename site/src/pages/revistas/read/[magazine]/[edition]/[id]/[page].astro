@@ -5,7 +5,7 @@ import {
   getMagazines, getEditionsByMagazine, getPublishedArticlesByEdition,
   getArticleWithMeta, getArticleImages, getArticlePages, getArticleTags, getArticleAbstracts,
   authorFullName, type Image,
-} from '../../../../../../lib/db';
+} from '../../../../../../lib/content';
 import { stripHtml, processArticleBody, imageUrl } from '../../../../../../lib/text';
 
 export async function getStaticPaths() {
@@ -34,6 +34,7 @@ export async function getStaticPaths() {
 
 const { magazine: magazineSlug, edition: editionIdx, id, page } = Astro.params;
 const pageNum = Number(page);
+const isEntrevista = magazineSlug === 'entrevista';
 
 const article = getArticleWithMeta(Number(id))!;
 const images  = getArticleImages(Number(id));
@@ -95,6 +96,9 @@ const plainTitle = stripHtml(article.title) || 'Artigo';
 const pageTitle  = articlePage.title ? stripHtml(articlePage.title) : `${plainTitle} (${pageNum}/${totalPages})`;
 
 const baseUrl = `/revistas/read/${magazineSlug}/${editionIdx}/${id}`;
+
+// entrevista shows all its pages on one URL, switched with ?page=N
+if (isEntrevista) return Astro.redirect(`${baseUrl}?page=${pageNum}`, 301);
 const prevUrl = pageNum === 2 ? baseUrl : `${baseUrl}/${pageNum - 1}`;
 const nextUrl = pageNum < totalPages ? `${baseUrl}/${pageNum + 1}` : null;
 ---
@@ -106,7 +110,6 @@ const nextUrl = pageNum < totalPages ? `${baseUrl}/${pageNum + 1}` : null;
   magazine={magazineSlug}
   editionIdx={editionIdx}
 >
-
 
     <!-- Edition bar: full width -->
     <div class="rule-three rule-three--mag">
@@ -195,7 +198,7 @@ const nextUrl = pageNum < totalPages ? `${baseUrl}/${pageNum + 1}` : null;
         {tags.length > 0 && pageNum === totalPages && (
           <div class="tags" style="margin-top:16px;">
             {tags.map(t => (
-              <a class="tag" href={`/pesquisa?tag=${t.id}`}>{t.title}</a>
+              <a class="tag" href={`/pesquisa?tag=${encodeURIComponent(t.title)}`}>{t.title}</a>
             ))}
           </div>
         )}
@@ -258,7 +261,6 @@ const nextUrl = pageNum < totalPages ? `${baseUrl}/${pageNum + 1}` : null;
       </div>
 
     </div><!-- /.article-page -->
-  </div>
 
   <script>
     document.querySelector('.abstracts_trigger')?.addEventListener('click', e => {

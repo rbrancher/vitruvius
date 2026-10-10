@@ -1,4 +1,4 @@
-import type { Image } from './db.js';
+import type { Image } from './content';
 
 /**
  * Strip all HTML tags, returning plain text suitable for <title> and meta tags.
@@ -31,6 +31,8 @@ const R2_BASE = 'https://pub-b2c5a3f3806a4e169a40d2daa5f0f7ad.r2.dev';
 
 export function imageUrl(src: string | null | undefined, size = 'grid_9'): string {
   if (!src) return '';
+  // New images live in the repository (public/imagens/...) and are used as is.
+  if (src.startsWith('/')) return src;
   const slash = src.lastIndexOf('/');
   if (slash === -1) return `${R2_BASE}/${src}`;
   const dir = src.slice(0, slash);

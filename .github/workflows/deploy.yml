@@ -1,0 +1,54 @@
+name: deploy
+
+# Every merge to master publishes the site to Cloudflare Pages.
+# Needs repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run check
+
+      # Guard against publishing an empty or gutted site (e.g. before the
+      # one-time export, or after an accidental mass deletion).
+      - name: Check there is content to publish
+        run: |
+          n=$(find conteudo/revistas -name '[0-9]*.md' 2>/dev/null | wc -l)
+          echo "$n articles"
+          if [ "$n" -lt "${MIN_ARTICLES:-100}" ]; then
+            echo "::error::Only $n articles in site/conteudo; refusing to deploy."
+            exit 1
+          fi
+
+      - run: npm run build
+
+      - name: Publish to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are not set."
+            exit 1
+          fi
+          npx wrangler pages deploy dist --project-name vitruvius

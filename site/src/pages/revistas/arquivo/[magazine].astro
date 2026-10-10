@@ -5,7 +5,7 @@ import {
   getEditionsByMagazine,
   getPublishedArticlesByEdition,
   authorFullName,
-} from '../../../lib/db';
+} from '../../../lib/content';
 
 export async function getStaticPaths() {
   return getMagazines().map(mag => ({
@@ -80,5 +80,4 @@ const editionData = editions.map(ed => ({
       ))}
 
     </div>
-  </div>
 </Base>

@@ -1,6 +1,6 @@
 ---
 import Base from '../../../layouts/Base.astro';
-import { getMagazines, getMagazineByTitle, getEditionsByMagazine } from '../../../lib/db';
+import { getMagazines, getMagazineByTitle, getEditionsByMagazine } from '../../../lib/content';
 
 export async function getStaticPaths() {
   return getMagazines().map(m => ({ params: { magazine: m.title } }));
@@ -52,5 +52,4 @@ const label = LABELS[magazineSlug] ?? magazineSlug;
         </div>
       ))}
     </div>
-  </div>
 </Base>

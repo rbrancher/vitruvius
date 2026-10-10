@@ -1,6 +1,6 @@
 ---
 import Base from '../../../layouts/Base.astro';
-import { getMagazines } from '../../../lib/db';
+import { getMagazines } from '../../../lib/content';
 
 export async function getStaticPaths() {
   return getMagazines().map(mag => ({
@@ -212,5 +212,4 @@ const hasConselho = !!data?.conselho;
       )}
 
     </div>
-  </div>
 </Base>

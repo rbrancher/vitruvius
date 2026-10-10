@@ -700,10 +700,12 @@ main { border-top: 1px solid #ccc; }
 .article-body p:first-child { margin-top: 0; }
 .article-body h2 { font-size: 15px; font-weight: bold; margin: 24px 0 12px; }
 .article-body h3 { font-size: 12px; font-weight: bold; margin: 18px 0 12px; }
-.article-body blockquote {
+.article-body blockquote,
+.article-body .citation {
   padding-left: 24px;
-  margin: 18px 36px 18px 0;
+  margin: 18px 36px 18px 24px;
   color: #444;
+  font-style: italic;
 }
 .article-body a { color: var(--mag-color); text-decoration: underline; }
 .article-body ul { list-style: square; padding-left: 18px; margin-bottom: 18px; }
@@ -733,6 +735,17 @@ main { border-top: 1px solid #ccc; }
 .page-nav__label { color: #666; }
 .page-nav__prev, .page-nav__next { font-weight: bold; }
 .page-nav__prev:hover, .page-nav__next:hover { text-decoration: underline; }
+
+/* ── Entrevista page TOC (top nav) ── */
+.entrevista-toc {
+  border-top: 1px solid #ccc;
+  padding-top: 8px;
+  margin-top: 18px;
+  margin-bottom: 4px;
+}
+.entrevista-toc-item { margin-bottom: 2px; }
+.entrevista-toc-item a { color: #666; }
+.entrevista-toc-item--active a { color: #000; font-weight: bold; }
 
 /* ── Abstracts / Citation (hidden by default, toggled by sidebar links) ── */
 .abstracts, .how_to_cit {

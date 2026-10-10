@@ -24,3 +24,8 @@ pnpm-debug.log*
 .idea/
 node_modules/
 dist/
+
+# sample-data build and test output
+dist-fixture/
+test-results/
+playwright-report/

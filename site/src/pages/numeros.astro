@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getDb } from '../lib/db';
+import { getAllArticles, getAllEditions, countImages } from '../lib/content';
 
 // ── magazine metadata (static) ────────────────────────────────────────────────
 
@@ -14,26 +14,24 @@ const MAG_COLORS: Record<number,string> = {
   4:'#000000', 5:'#0598CD', 6:'#673466', 7:'#009245',
 };
 
-// ── live DB queries ───────────────────────────────────────────────────────────
+// ── statistics from the content files ──────────────────────────────────────────
 
-const db = getDb();
+const published = getAllArticles().filter(a => a.status === '2');
+// Edition idx year prefix: '21.xxx' → 2021
+const yearOf = (a: { edition_idx: string }) => parseInt(a.edition_idx, 10) + 2000;
 
 // Totals
-const totalArticles = (db.prepare('SELECT COUNT(*) as n FROM articles WHERE status=2').get() as any).n as number;
-const totalAuthors  = (db.prepare('SELECT COUNT(DISTINCT author_id) as n FROM articles WHERE status=2 AND author_id IS NOT NULL').get() as any).n as number;
-const totalImages   = (db.prepare('SELECT COUNT(*) as n FROM images').get() as any).n as number;
-const totalEditions = (db.prepare('SELECT COUNT(*) as n FROM editions').get() as any).n as number;
+const totalArticles = published.length;
+const totalAuthors  = new Set(published.filter(a => a.author_id != null).map(a => a.author_id)).size;
+const totalImages   = countImages();
+const totalEditions = getAllEditions().filter(e => e.status !== '0').length;
 
-// Articles per year per magazine (edition idx year prefix: '21.xxx' → 2021)
-const rawByYear = db.prepare(`
-  SELECT a.magazine_id as mag_id,
-    CAST(SUBSTR(e.idx, 1, INSTR(e.idx,'.')-1) AS INTEGER) + 2000 as yr,
-    COUNT(*) as cnt
-  FROM articles a JOIN editions e ON a.edition_id = e.id
-  WHERE a.status = '2'
-  GROUP BY a.magazine_id, yr
-  ORDER BY yr, a.magazine_id
-`).all() as {mag_id:number; yr:number; cnt:number}[];
+// Articles per year per magazine
+const rawByYear: {mag_id:number; yr:number; cnt:number}[] = [];
+for (const a of published) {
+  const r = rawByYear.find(r => r.mag_id === a.magazine_id && r.yr === yearOf(a));
+  if (r) r.cnt++; else rawByYear.push({ mag_id: a.magazine_id, yr: yearOf(a), cnt: 1 });
+}
 
 // Year range from data
 const allYears = [...new Set(rawByYear.map(r => r.yr))].sort();
@@ -47,66 +45,44 @@ for (const r of rawByYear) yearMap.get(r.yr)?.set(r.mag_id, r.cnt);
 const yearTotals = YEARS.map(y => Array.from(yearMap.get(y)!.values()).reduce((s,n)=>s+n,0));
 const maxTotal   = Math.max(...yearTotals);
 
-// Top 10 authors
-const topAuthorsRaw = db.prepare(`
-  SELECT au.firstname || ' ' || au.lastname as name, au.slug,
-    COUNT(*) as articles,
-    COUNT(DISTINCT a.magazine_id) as mags,
-    MIN(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as first_yr,
-    MAX(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as last_yr
-  FROM articles a
-  JOIN authors au ON a.author_id = au.id
-  JOIN editions e ON a.edition_id = e.id
-  WHERE a.status = '2'
-  GROUP BY a.author_id
-  ORDER BY articles DESC
-  LIMIT 10
-`).all() as {name:string; slug:string; articles:number; mags:number; first_yr:number; last_yr:number}[];
+// Per-author aggregates
+interface AuthorStat { name:string; slug:string; articles:number; mags:number; first_yr:number; last_yr:number; byMag: Map<number,number>; }
+const authorStats = new Map<number, AuthorStat>();
+for (const a of published) {
+  if (a.author_id == null || !a.author_slug) continue;
+  let st = authorStats.get(a.author_id);
+  if (!st) {
+    st = { name: `${a.author_firstname ?? ''} ${a.author_lastname ?? ''}`, slug: a.author_slug,
+           articles: 0, mags: 0, first_yr: Infinity, last_yr: -Infinity, byMag: new Map() };
+    authorStats.set(a.author_id, st);
+  }
+  st.articles++;
+  st.byMag.set(a.magazine_id, (st.byMag.get(a.magazine_id) ?? 0) + 1);
+  st.mags = st.byMag.size;
+  st.first_yr = Math.min(st.first_yr, yearOf(a));
+  st.last_yr  = Math.max(st.last_yr, yearOf(a));
+}
+const authorsByArticles = [...authorStats.values()].sort((x, y) => y.articles - x.articles);
 
-// Per-author per-magazine breakdown for those 10
-const slugList = topAuthorsRaw.map(a => a.slug);
-const authorMagRaw = db.prepare(`
-  SELECT au.slug, a.magazine_id, COUNT(*) as cnt
-  FROM articles a JOIN authors au ON a.author_id = au.id
-  WHERE a.status = '2' AND au.slug IN (${slugList.map(()=>'?').join(',')})
-  GROUP BY au.slug, a.magazine_id
-`).all(...slugList) as {slug:string; magazine_id:number; cnt:number}[];
+// Top 10 authors
+const topAuthorsRaw = authorsByArticles.slice(0, 10);
+const authorMagRaw = topAuthorsRaw.flatMap(au =>
+  [...au.byMag].map(([magazine_id, cnt]) => ({ slug: au.slug, magazine_id, cnt })));
 
 // Magazine lifespans
-const magSpanRaw = db.prepare(`
-  SELECT a.magazine_id,
-    MIN(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as start_yr,
-    MAX(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as end_yr
-  FROM articles a JOIN editions e ON a.edition_id = e.id
-  WHERE a.status = '2'
-  GROUP BY a.magazine_id
-`).all() as {magazine_id:number; start_yr:number; end_yr:number}[];
+const magSpanRaw = MAG_IDS.flatMap(id => {
+  const yrs = published.filter(a => a.magazine_id === id).map(yearOf);
+  return yrs.length ? [{ magazine_id: id, start_yr: Math.min(...yrs), end_yr: Math.max(...yrs) }] : [];
+});
 
 // Authors who covered all 7 magazines
-const allMagAuthors = db.prepare(`
-  SELECT au.firstname || ' ' || au.lastname as name, au.slug,
-    COUNT(*) as articles,
-    MIN(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as first_yr,
-    MAX(CAST(SUBSTR(e.idx,1,INSTR(e.idx,'.')-1) AS INTEGER)+2000) as last_yr
-  FROM articles a
-  JOIN authors au ON a.author_id = au.id
-  JOIN editions e ON a.edition_id = e.id
-  WHERE a.status = '2'
-  GROUP BY a.author_id
-  HAVING COUNT(DISTINCT a.magazine_id) = 7
-  ORDER BY articles DESC
-`).all() as {name:string; slug:string; articles:number; first_yr:number; last_yr:number}[];
+const allMagAuthors = authorsByArticles.filter(a => a.mags === 7);
 
 // Peak year
 const peakYr = YEARS[yearTotals.indexOf(maxTotal)];
 
 // One-hit wonders
-const oneHitCount = (db.prepare(`
-  SELECT COUNT(*) as n FROM (
-    SELECT author_id FROM articles WHERE status='2' AND author_id IS NOT NULL
-    GROUP BY author_id HAVING COUNT(*)=1
-  )
-`).get() as any).n as number;
+const oneHitCount = [...authorStats.values()].filter(a => a.articles === 1).length;
 const oneHitPct = Math.round(oneHitCount / totalAuthors * 100);
 
 // ── derived chart data ────────────────────────────────────────────────────────
@@ -177,7 +153,7 @@ const SPAN_SVG_W = SPAN_LABEL + SPAN_W + 50;
 const SPAN_SVG_H = magSpans.length * (SPAN_BAR_H + SPAN_GAP) + 30;
 ---
 
-<Base title="Vitruvius em números" description="22 anos de arquitetura, urbanismo e design: 6.647 artigos, 2.345 autores, 109.957 imagens.">
+<Base title="Vitruvius em números" description={`24 anos de arquitetura, urbanismo e design: ${totalArticles.toLocaleString('pt-BR')} artigos, ${totalAuthors.toLocaleString('pt-BR')} autores, ${totalImages.toLocaleString('pt-BR')} imagens.`}>
 
 <style>
   /* ── page layout ── */
@@ -422,11 +398,11 @@ const SPAN_SVG_H = magSpans.length * (SPAN_BAR_H + SPAN_GAP) + 30;
       </h2>
       <div class="spotlight__stats">
         <div>
-          <div class="spotlight__stat-n">270</div>
+          <div class="spotlight__stat-n">287</div>
           <div class="spotlight__stat-l">artigos</div>
         </div>
         <div>
-          <div class="spotlight__stat-n">21</div>
+          <div class="spotlight__stat-n">24</div>
           <div class="spotlight__stat-l">anos de presença</div>
         </div>
         <div>
@@ -434,15 +410,15 @@ const SPAN_SVG_H = magSpans.length * (SPAN_BAR_H + SPAN_GAP) + 30;
           <div class="spotlight__stat-l">revistas</div>
         </div>
         <div>
-          <div class="spotlight__stat-n">23</div>
+          <div class="spotlight__stat-n">80</div>
           <div class="spotlight__stat-l">temas cobertos</div>
         </div>
       </div>
     </div>
     <div class="spotlight__right">
       <p class="spotlight__quote">
-        De 2001 a 2021, não houve um único ano em que Abilio Guerra deixou de publicar no Vitruvius.
-        Com 270 artigos em todas as 7 revistas, é o autor que mais amplamente mapeou
+        De 2001 a 2024, não houve um único ano em que Abilio Guerra deixou de publicar no Vitruvius.
+        Com 287 artigos em todas as 7 revistas, é o autor que mais amplamente mapeou
         a arquitetura e o urbanismo brasileiro contemporâneo.
       </p>
     </div>
@@ -460,7 +436,7 @@ const SPAN_SVG_H = magSpans.length * (SPAN_BAR_H + SPAN_GAP) + 30;
         O Vitruvius sempre foi uma plataforma aberta. Mais de dois terços dos autores aparecem
         uma única vez — arquitetos, professores, estudantes que registraram um projeto,
         uma reflexão, uma obra. <br><br>
-        Os 33% restantes formam o núcleo que acompanhou décadas de produção arquitetônica brasileira
+        Os 32% restantes formam o núcleo que acompanhou décadas de produção arquitetônica brasileira
         e ibero-americana.
       </p>
     </div>
@@ -553,7 +529,7 @@ const SPAN_SVG_H = magSpans.length * (SPAN_BAR_H + SPAN_GAP) + 30;
         </svg>
       </div>
       <p style="font-size:.8rem; color:#888; margin-top:10px; line-height:1.5;">
-        Arquiteturismo encerrou em 2014. Resenhas online reduziu drasticamente após 2019.
+        Arquiteturismo encerrou em 2016. Resenhas online reduziu drasticamente após 2021.
         Barras mais claras indicam revistas encerradas.
       </p>
     </div>

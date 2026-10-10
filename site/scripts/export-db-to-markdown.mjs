@@ -33,7 +33,9 @@ if (['autores', 'revistas'].some(d => fs.existsSync(path.join(outDir, d)))) {
 }
 
 const db = new Database(dbPath, { readonly: true });
-const LANGS = { 1: '', 2: '_en', 3: '_es', 4: '_it' };
+// Legacy `languages` table. Caption rows with language 0 are not a language:
+// the old system split captions at '|' and filed the rest under 0.
+const LANGS = { 1: '', 2: '_en', 3: '_es', 4: '_it', 5: '_fr', 6: '_ca' };
 
 // The legacy site was Brazilian: a timestamp's calendar date is the São Paulo one.
 const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' });
@@ -56,6 +58,7 @@ function write(file, data, body = '') {
 }
 
 const counts = { autores: 0, edicoes: 0, artigos: 0, imagens: 0 };
+const untitled = [];
 
 // ── Authors ──────────────────────────────────────────────────────────────────
 const authorSlug = new Map();
@@ -98,7 +101,7 @@ const q = {
     JOIN projectauthors p ON p.id = x.projectauthor_id WHERE x.article_id = ? ORDER BY p.id`),
   images: db.prepare(`SELECT i.* FROM articles_images x JOIN images i ON i.id = x.image_id
     WHERE x.article_id = ? ORDER BY i.img_order IS NULL, i.img_order, i.id`),
-  captions: db.prepare("SELECT language_id, caption FROM captions WHERE image_id = ? AND caption != ''"),
+  captions: db.prepare("SELECT language_id, caption FROM captions WHERE image_id = ? AND caption != '' ORDER BY id"),
   pages: db.prepare('SELECT * FROM articlepages WHERE article_id = ? ORDER BY pagenum IS NULL, pagenum, id'),
 };
 
@@ -115,17 +118,28 @@ for (const a of db.prepare('SELECT * FROM articles ORDER BY id').all()) {
     chamada: a.lead,
     data: toDate(a.created_at),
     data_publicacao: toDate(a.published_at),
-    publicado: a.status === '2' || a.status === '3',
+    publicado: (a.status === '2' || a.status === '3') && !!a.title,
     formato: 'html',
   };
-  for (const r of q.abstracts.all(a.id)) data[`resumo${LANGS[r.language_id] ?? `_${r.language_id}`}`] = r.abstract;
+  if (!a.title) untitled.push(path.relative(outDir, path.join(dir, `${a.id}.md`)));
+  for (const r of q.abstracts.all(a.id)) {
+    if (!(r.language_id in LANGS)) throw new Error(`article ${a.id}: unknown abstract language ${r.language_id}`);
+    data[`resumo${LANGS[r.language_id]}`] = r.abstract;
+  }
   data.tags = q.tags.all(a.id).map(t => t.title);
   data.autores_projeto = q.projectAuthors.all(a.id).map(p => [p.firstname, p.lastname].filter(Boolean).join(' '));
 
   data.imagens = q.images.all(a.id).map(i => {
     counts.imagens++;
     const img = { id: i.id, arquivo: i.src, capa: i.is_cover ? true : undefined, credito: i.credit, fonte: i.source };
-    for (const c of q.captions.all(i.id)) img[`legenda${LANGS[c.language_id] ?? `_${c.language_id}`}`] = c.caption;
+    const caps = q.captions.all(i.id);
+    const pt = caps.filter(c => c.language_id === 1 || c.language_id === 0).map(c => c.caption);
+    if (pt.length) img.legenda = pt.join('|');
+    for (const c of caps) {
+      if (c.language_id === 1 || c.language_id === 0) continue;
+      if (!(c.language_id in LANGS)) throw new Error(`image ${i.id}: unknown caption language ${c.language_id}`);
+      img[`legenda${LANGS[c.language_id]}`] = c.caption;
+    }
     return clean(img);
   });
 
@@ -139,3 +153,7 @@ for (const a of db.prepare('SELECT * FROM articles ORDER BY id').all()) {
 }
 
 console.log(`Exported to ${outDir}:`, counts);
+if (untitled.length) {
+  console.log(`\n${untitled.length} article(s) without a title, exported as drafts (publicado: false):`);
+  for (const f of untitled) console.log(`  ${f}`);
+}

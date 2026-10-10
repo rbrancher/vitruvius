@@ -122,12 +122,12 @@ const ImageFile = z.object({
   arquivo: z.string(),
   capa: z.boolean().default(false),
   credito: text, fonte: text,
-  legenda: text, legenda_en: text, legenda_es: text, legenda_it: text,
+  legenda: text, legenda_en: text, legenda_es: text, legenda_it: text, legenda_fr: text, legenda_ca: text,
 }).strict();
 
 const ArticleFile = z.object({
   indice: z.union([z.string(), z.number()]).nullish().transform(v => (v == null ? null : String(v))),
-  titulo: z.string(),
+  titulo: text,
   subtitulo: text,
   autor: text,
   secao: text,
@@ -136,13 +136,15 @@ const ArticleFile = z.object({
   data_publicacao: date,
   publicado: z.boolean().default(true),
   formato,
-  resumo: text, resumo_en: text, resumo_es: text, resumo_it: text,
+  resumo: text, resumo_en: text, resumo_es: text, resumo_it: text, resumo_fr: text, resumo_ca: text,
   tags: z.array(z.string()).default([]),
   autores_projeto: z.array(z.string()).default([]),
   imagens: z.array(ImageFile).default([]),
   paginas: z.array(z.object({ titulo: text, local: text, data: z.union([z.string(), z.number()]).nullish()
     .transform(v => (v == null ? null : String(v))) }).strict()).default([]),
-}).strict();
+}).strict().superRefine((a, ctx) => {
+  if (a.publicado && !a.titulo) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['titulo'], message: 'campo obrigatório (ou publicado: false)' });
+});
 
 export const PAGE_BREAK = /\n?<!--\s*pagina\s*-->\n?/;
 
@@ -243,13 +245,13 @@ function load(): Store {
           s.articles.push({
             id: articleId, magazine_id: mag.id, edition_id: id,
             author_id: data.autor ? authorId.get(data.autor)! : null,
-            idx: data.indice, title: data.titulo, subtitle: data.subtitulo ?? null,
+            idx: data.indice, title: data.titulo ?? null, subtitle: data.subtitulo ?? null,
             lead: data.chamada ?? null, text: render(main, data.formato),
             status: data.publicado ? '2' : '1', section: data.secao ?? null,
             created_at: toTimestamp(data.data),
           });
           const abs: Record<string, string> = {};
-          for (const [k, lang] of [['resumo', 'pt'], ['resumo_en', 'en'], ['resumo_es', 'es'], ['resumo_it', 'it']] as const) {
+          for (const [k, lang] of [['resumo', 'pt'], ['resumo_en', 'en'], ['resumo_es', 'es'], ['resumo_it', 'it'], ['resumo_fr', 'fr'], ['resumo_ca', 'ca']] as const) {
             if (data[k]) abs[lang] = data[k]!;
           }
           s.abstracts.set(articleId, abs);
@@ -341,15 +343,16 @@ export function getArticleWithMeta(articleId: number): ArticleWithMeta | null {
   return a ? withMeta(a) : null;
 }
 
-const LANG_LABELS: Record<string, string> = { pt: 'português', en: 'english', es: 'español', it: 'italiano' };
+const LANGS = ['pt', 'en', 'es', 'it', 'fr', 'ca'] as const;
+const LANG_LABELS: Record<string, string> = { pt: 'português', en: 'english', es: 'español', it: 'italiano', fr: 'français', ca: 'català' };
 
 export interface ArticleAbstract { language_id: number; label: string; abstract: string; }
 
 export function getArticleAbstracts(articleId: number): ArticleAbstract[] {
   const abs = store().abstracts.get(articleId) ?? {};
-  return (['pt', 'en', 'es', 'it'] as const)
+  return LANGS
     .filter(l => abs[l])
-    .map((l, i) => ({ language_id: ['pt', 'en', 'es', 'it'].indexOf(l) + 1, label: LANG_LABELS[l], abstract: abs[l] }));
+    .map(l => ({ language_id: LANGS.indexOf(l) + 1, label: LANG_LABELS[l], abstract: abs[l] }));
 }
 
 export function getArticlePages(articleId: number): ArticlePage[] {

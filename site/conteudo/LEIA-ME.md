@@ -76,14 +76,14 @@ Segundo parágrafo, com **negrito**, *itálico* e um [link](https://exemplo.com)
 | Campo | O que é | Obrigatório |
 |---|---|---|
 | `indice` | posição do artigo na edição (`'01'`, `'02'`…) | não |
-| `titulo` | título | **sim** |
+| `titulo` | título | **sim** (para artigos publicados) |
 | `subtitulo` | subtítulo | não |
 | `autor` | nome do arquivo do autor em `autores/`, sem `.md` | não |
 | `secao` | seção (usada em drops, ex. `ensaio`) | não |
 | `chamada` | texto curto que aparece na capa da edição | não |
 | `data` | data do artigo (ano-mês-dia) | não |
 | `publicado` | `false` deixa o artigo como rascunho, fora do site | não (padrão `true`) |
-| `resumo`, `resumo_en`, `resumo_es`, `resumo_it` | resumos por idioma | não |
+| `resumo`, `resumo_en`, `resumo_es`, `resumo_it`, `resumo_fr`, `resumo_ca` | resumos por idioma (português, inglês, espanhol, italiano, francês, catalão) | não |
 | `tags` | lista de palavras-chave | não |
 | `imagens` | lista de imagens (veja abaixo) | não |
 | `paginas` | páginas extras (revista projetos, veja abaixo) | não |

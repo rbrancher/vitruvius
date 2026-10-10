@@ -64,17 +64,28 @@ const noEdition = [];
 let skippedNoMagazine = 0;
 
 // ── Authors ──────────────────────────────────────────────────────────────────
+// Authors sharing a name (and so a slug) are the same person entered more
+// than once: they become one file, keeping the longest value of each field.
 const authorSlug = new Map();
-for (const a of db.prepare('SELECT * FROM authors').all()) {
+const bySlug = new Map();
+for (const a of db.prepare('SELECT * FROM authors ORDER BY id').all()) {
   if (a.id === 0 || !a.slug || !(a.firstname || a.lastname)) continue;
   authorSlug.set(a.id, a.slug);
-  write(path.join(outDir, 'autores', `${a.slug}.md`), {
-    nome: a.firstname,
-    sobrenome: a.lastname,
-    instituicao: a.institution,
-    titulacao: a.degree,
-    formato: a.biography ? 'html' : undefined,
-  }, a.biography ?? '');
+  if (!bySlug.has(a.slug)) bySlug.set(a.slug, []);
+  bySlug.get(a.slug).push(a);
+}
+const longest = (rows, key) => rows.map(r => r[key]).filter(Boolean).sort((x, y) => y.length - x.length)[0];
+const mergedAuthors = [];
+for (const [slug, rows] of bySlug) {
+  if (rows.length > 1) mergedAuthors.push(`${slug} (${rows.length}: ids ${rows.map(r => r.id).join(', ')})`);
+  const bio = longest(rows, 'biography');
+  write(path.join(outDir, 'autores', `${slug}.md`), {
+    nome: longest(rows, 'firstname'),
+    sobrenome: longest(rows, 'lastname'),
+    instituicao: longest(rows, 'institution'),
+    titulacao: longest(rows, 'degree'),
+    formato: bio ? 'html' : undefined,
+  }, bio ?? '');
   counts.autores++;
 }
 
@@ -176,6 +187,10 @@ console.log(`Exported to ${outDir}:`, counts);
 if (untitled.length) {
   console.log(`\n${untitled.length} article(s) without a title, exported as drafts (publicado: false):`);
   for (const f of untitled) console.log(`  ${f}`);
+}
+if (mergedAuthors.length) {
+  console.log(`\n${mergedAuthors.length} author name(s) entered more than once, merged into one file each:`);
+  for (const m of mergedAuthors) console.log(`  ${m}`);
 }
 if (noEdition.length) {
   console.log(`\n${noEdition.length} article(s) without an edition, exported as drafts in sem-edicao/:`);

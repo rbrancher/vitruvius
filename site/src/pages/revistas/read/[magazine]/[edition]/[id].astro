@@ -1,10 +1,11 @@
 ---
 import Base from '../../../../../layouts/Base.astro';
 import ArticleGallery from '../../../../../components/ArticleGallery.astro';
+import ArqturBanner from '../../../../../components/ArqturBanner.astro';
 import {
   getMagazines, getEditionsByMagazine, getPublishedArticlesByEdition,
   getArticleWithMeta, getArticleImages, getArticlePages, getArticleTags, getArticleAbstracts,
-  authorFullName, type Image,
+  getEditionBannerImage, authorFullName, type Image,
 } from '../../../../../lib/content';
 import { stripHtml, processArticleBody, imageUrl } from '../../../../../lib/text';
 
@@ -21,6 +22,8 @@ export async function getStaticPaths() {
 }
 
 const { magazine: magazineSlug, edition: editionIdx, id } = Astro.params;
+const isEntrevista = magazineSlug === 'entrevista';
+
 const article = getArticleWithMeta(Number(id))!;
 const images = getArticleImages(Number(id));
 const tags = getArticleTags(Number(id));
@@ -29,18 +32,34 @@ const abstracts = getArticleAbstracts(Number(id));
 const imageMap = new Map<number, Image>(images.map(img => [img.id, img]));
 const bodyHtml = processArticleBody(article.text ?? article.lead, imageMap);
 const articlePages = getArticlePages(Number(id));
-const totalPages = articlePages.length + 1; // page 1 = main text, 2..N = articlepages
+const totalPages = articlePages.length + 1;
 
 const placeholderIds = new Set(
   [...(article.text ?? '').matchAll(/\{--image:(\d+)--\}/g)].map(m => Number(m[1]))
 );
 const galleryImages = images.filter(img => img.is_cover || !placeholderIds.has(img.id));
 
-const plainTitle   = stripHtml(article.title) || 'Artigo';
+// For entrevista: pre-process all sub-page bodies and build page title list
+const entrevistaPageBodies = isEntrevista
+  ? articlePages.map(pg => processArticleBody(pg.text, imageMap))
+  : [];
+const entrevistaPageTitles = isEntrevista ? [
+  'Introdução',
+  ...articlePages.map((pg, i) => {
+    const t = pg.title ? stripHtml(pg.title) : '';
+    return t && t !== stripHtml(article.title) ? t : `página ${i + 2}`;
+  }),
+] : [];
+
+const plainTitle    = stripHtml(article.title) || 'Artigo';
 const plainAbstract = stripHtml(article.abstract ?? article.lead);
 
 const siblings = getPublishedArticlesByEdition(article.edition_id)
   .filter(a => a.id !== article.id);
+
+const bannerSrc = magazineSlug === 'arquiteturismo'
+  ? getEditionBannerImage(article.edition_id)
+  : null;
 
 const LABELS: Record<string, string> = {
   arquitextos:    'arquitextos',
@@ -52,12 +71,6 @@ const LABELS: Record<string, string> = {
   resenhasonline: 'resenhas online',
 };
 const label = LABELS[magazineSlug] ?? magazineSlug;
-
-const ISSN: Record<string, string> = {
-  arquitextos: '1809-6298', arquiteturismo: '1982-9930', drops: '2175-6716',
-  minhacidade: '1982-9922', entrevista: '2175-6708', projetos: '2595-4245',
-  resenhasonline: '2175-6694',
-};
 
 const authorName = (article.author_firstname || article.author_lastname)
   ? authorFullName({ firstname: article.author_firstname, lastname: article.author_lastname })
@@ -71,10 +84,12 @@ const edParts = editionIdx.split('.');
 const edYear2 = edParts[0] ?? '';
 const edNum3  = edParts[1] ?? '';
 const artIdx  = article.idx ?? '00';
-const edHeaderLeft = `${edNum3}.${artIdx}${article.section ? ' ' + article.section : ''}`;
+const edHeaderLeft  = `${edNum3}.${artIdx}${article.section ? ' ' + article.section : ''}`;
 const edHeaderRight = articleDate
   ? `ano ${edYear2}, ${PT_MONTHS[articleDate.getMonth()]}. ${articleDate.getFullYear()}`
   : `ed. ${editionIdx}`;
+
+const baseArticleUrl = `/revistas/read/${magazineSlug}/${editionIdx}/${id}`;
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -101,31 +116,29 @@ const jsonLd = {
 >
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
-  {/* Redirect legacy ?page=N links to the new sub-path */}
-  {totalPages > 1 && (
-    <script define:vars={{ totalPages, basePath: `/revistas/read/${magazineSlug}/${editionIdx}/${id}` }}>
+  {/* Non-entrevista: redirect legacy ?page=N to sub-path */}
+  {!isEntrevista && totalPages > 1 && (
+    <script define:vars={{ totalPages, basePath: baseArticleUrl }}>
       const p = new URLSearchParams(location.search).get('page');
       if (p && Number(p) > 1 && Number(p) <= totalPages)
         location.replace(`${basePath}/${p}`);
     </script>
   )}
 
-
-
-    <!-- Edition bar: full width -->
+    <!-- Edition bar -->
     <div class="rule-three rule-three--mag">
       <a href={`/revistas/browse/${magazineSlug}/${editionIdx}`}>{edHeaderLeft}</a>
       <span class="sep">·</span>
       <span class="ed-info">{edHeaderRight}</span>
     </div>
 
-    <!-- Header row: title/author full meta-data width, no sidebar -->
+    {bannerSrc && <ArqturBanner src={imageUrl(bannerSrc, 'arqtur_edition')} alt={`arquiteturismo ${editionIdx}`} />}
+
     <div class="meta-data">
       <div class="grid_9 alpha">
         <header class="article-header">
           <h1 set:html={article.title} />
           {article.subtitle && <h2 set:html={article.subtitle} />}
-
           {authorName && (
             <div>
               <div class="ah-author">
@@ -142,7 +155,6 @@ const jsonLd = {
       </div>
     </div>
 
-    <!-- Content row -->
     <div class="article-page clearfix">
 
       <div class="grid_9 alpha">
@@ -166,29 +178,54 @@ const jsonLd = {
           </p>
         </div>
 
-        {galleryImages.length > 1 && (
+        {/* Gallery: never for entrevista */}
+        {!isEntrevista && galleryImages.length > 1 && (
           <ArticleGallery images={galleryImages} />
         )}
 
-        {totalPages > 1 && (
-          <nav class="page-nav">
-            <span class="page-nav__prev" style="color:#ccc;">← início</span>
-            <span class="page-nav__label">página 1 de {totalPages}</span>
-            <a class="page-nav__next" href={`/revistas/read/${magazineSlug}/${editionIdx}/${id}/2`}>
-              próxima página →
-            </a>
+        {/* ── Entrevista top nav: all page titles ── */}
+        {isEntrevista && totalPages > 1 && (
+          <nav class="entrevista-toc">
+            {entrevistaPageTitles.map((title, i) => (
+              <div class="entrevista-toc-item" data-toc-page={i + 1}>
+                <a href={i === 0 ? baseArticleUrl : `?page=${i + 1}`}>{i + 1}. {title}</a>
+              </div>
+            ))}
           </nav>
         )}
 
-        <div class="article-body" set:html={bodyHtml} />
-
-        {totalPages > 1 && (
+        {/* ── Non-entrevista top page nav ── */}
+        {!isEntrevista && totalPages > 1 && (
           <nav class="page-nav">
             <span class="page-nav__prev" style="color:#ccc;">← início</span>
             <span class="page-nav__label">página 1 de {totalPages}</span>
-            <a class="page-nav__next" href={`/revistas/read/${magazineSlug}/${editionIdx}/${id}/2`}>
-              próxima página →
-            </a>
+            <a class="page-nav__next" href={`${baseArticleUrl}/2`}>próxima página →</a>
+          </nav>
+        )}
+
+        {/* ── Article body ── */}
+        {isEntrevista && totalPages > 1 ? (
+          <>
+            <div class="article-body entrevista-page-content" data-page="1" set:html={bodyHtml} />
+            {entrevistaPageBodies.map((html, i) => (
+              <div class="article-body entrevista-page-content" data-page={i + 2} style="display:none" set:html={html} />
+            ))}
+          </>
+        ) : (
+          <div class="article-body" set:html={bodyHtml} />
+        )}
+
+        {/* ── Entrevista bottom nav (rendered by JS) ── */}
+        {isEntrevista && totalPages > 1 && (
+          <nav id="entrevista-page-nav" class="page-nav" />
+        )}
+
+        {/* ── Non-entrevista bottom page nav ── */}
+        {!isEntrevista && totalPages > 1 && (
+          <nav class="page-nav">
+            <span class="page-nav__prev" style="color:#ccc;">← início</span>
+            <span class="page-nav__label">página 1 de {totalPages}</span>
+            <a class="page-nav__next" href={`${baseArticleUrl}/2`}>próxima página →</a>
           </nav>
         )}
 
@@ -201,7 +238,7 @@ const jsonLd = {
         )}
       </div>
 
-      <!-- Sidebar: grid_3 omega -->
+      <!-- Sidebar -->
       <div class="grid_3 omega article-sidebar">
         <div class="service">
 
@@ -250,4 +287,44 @@ const jsonLd = {
       document.querySelector('.how_to_cit')?.classList.toggle('visible');
     });
   </script>
+
+  {isEntrevista && totalPages > 1 && (
+    <script define:vars={{ totalPages, pageTitles: entrevistaPageTitles, baseArticleUrl }}>
+      const params   = new URLSearchParams(location.search);
+      const rawPage  = parseInt(params.get('page') ?? '1') || 1;
+      const curPage  = Math.max(1, Math.min(rawPage, totalPages));
+
+      // Show only the current page's body
+      document.querySelectorAll('.entrevista-page-content').forEach(div => {
+        div.style.display = div.dataset.page === String(curPage) ? '' : 'none';
+      });
+
+      // Mark active TOC entry
+      document.querySelectorAll('[data-toc-page]').forEach(item => {
+        item.classList.toggle('entrevista-toc-item--active',
+          item.dataset.tocPage === String(curPage));
+      });
+
+      // Build bottom nav
+      const nav = document.getElementById('entrevista-page-nav');
+      if (nav) {
+        const title    = pageTitles[curPage - 1] ?? '';
+        const prevPage = curPage > 1 ? curPage - 1 : null;
+        const nextPage = curPage < totalPages ? curPage + 1 : null;
+
+        function pageUrl(n) {
+          return n === 1 ? baseArticleUrl : `?page=${n}`;
+        }
+
+        const prevHtml = prevPage !== null
+          ? `<a class="page-nav__prev" href="${pageUrl(prevPage)}">&lt; ${prevPage}</a>`
+          : `<span class="page-nav__prev" style="color:#ccc;">&lt; 1</span>`;
+        const nextHtml = nextPage !== null
+          ? `<a class="page-nav__next" href="${pageUrl(nextPage)}">${nextPage} &gt;</a>`
+          : `<span class="page-nav__next" style="color:#ccc;">${totalPages} &gt;</span>`;
+
+        nav.innerHTML = `${prevHtml}<span class="page-nav__label">${title}</span>${nextHtml}`;
+      }
+    </script>
+  )}
 </Base>

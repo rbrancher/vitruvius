@@ -1,12 +1,13 @@
 ---
 import Base from '../../../../layouts/Base.astro';
-import DropsCapa from '../../../../components/DropsCapa.astro';
 import {
   getMagazines, getMagazineByTitle, getEditionsByMagazine,
   getEditionByIdx, getPublishedArticlesByEdition, getEditionCoverImages,
-  authorFullName,
+  getEditionBannerImage, authorFullName,
 } from '../../../../lib/content';
 import { stripHtml, imageUrl } from '../../../../lib/text';
+import ArqturBanner from '../../../../components/ArqturBanner.astro';
+import DropsCapa from '../../../../components/DropsCapa.astro';
 
 export async function getStaticPaths() {
   const paths = [];
@@ -24,6 +25,7 @@ const editions = getEditionsByMagazine(magazine.id);
 const edition = getEditionByIdx(magazine.id, editionIdx)!;
 const articles = getPublishedArticlesByEdition(edition.id);
 const coverImages = getEditionCoverImages(edition.id);
+const bannerSrc = magazineSlug === 'arquiteturismo' ? getEditionBannerImage(edition.id) : null;
 
 const edIdx = editions.findIndex(e => e.id === edition.id);
 const prevEd = edIdx < editions.length - 1 ? editions[edIdx + 1] : null;
@@ -74,9 +76,16 @@ const col2 = articles.slice(half);
         </nav>
       </div>
 
+      {bannerSrc && <ArqturBanner src={imageUrl(bannerSrc, 'arqtur_edition')} alt={`arquiteturismo ${editionIdx}`} />}
+
       {magazineSlug === 'drops' ? (
-        <DropsCapa articles={articles} coverImages={coverImages} edNum={edNum}
-                   magazineSlug={magazineSlug} editionIdx={editionIdx} />
+        <DropsCapa
+          articles={articles}
+          coverImages={coverImages}
+          edNum={edNum}
+          magazineSlug={magazineSlug}
+          editionIdx={editionIdx}
+        />
       ) : (
       <div class="edition-layout">
 

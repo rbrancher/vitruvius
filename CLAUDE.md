@@ -81,12 +81,55 @@ When a layout change needs a case the sample lacks (a long title, an article
 without images, a new section…), add a file to `tests/fixture/conteudo/` and,
 for a new kind of page, an entry to `PAGES` in `tests/visual/pages.spec.ts`.
 
-## The original site
+## Golden rule: preserve the look and feel
 
-The legacy PHP site's source is in `vitruvius_original/`, next to this
-repository's folder on the owner's machine (`../vitruvius_original` from the
-repository root). It is the reference for how layouts should look. It is not
-available in cloud sessions; if you need it there, say so.
+**Any template or layout change must be based on the original implementation.**
+Before touching a component, inspect its PHP counterpart in the original site
+to see how it renders. The goal is a faithful port — same visual design, same
+interaction model, same information hierarchy — unless the user explicitly
+asks for a deviation.
+
+- Modernize the code (TypeScript, component boundaries, semantic HTML), but do not redesign.
+- Match spacing, typography, colours and widget behaviour to the original.
+- When in doubt, open the original and compare.
+
+The original (PHP/Joomla) source is on the owner's machine at
+`/home/rbrancher/Work/Code/vitruvius/vitruvius_original/`, next to this
+repository. It is not available in cloud sessions; if you need it there, say so.
+
+| Path | What it contains |
+|------|-----------------|
+| `vitruvius_original/application/` | Joomla application core |
+| `vitruvius_original/modules/` | Joomla modules (sidebars, navs, etc.) |
+| `vitruvius_original/media/` | Static assets (images, CSS, JS) |
+| `vitruvius_original/index.php` | Entry point |
+
+Magazine templates are typically under `modules/` or rendered by Joomla
+components; browse by magazine slug to find a specific layout.
+
+## Layout notes
+
+- CSS: one global stylesheet, `src/styles/global.css`; magazine-scoped
+  overrides via `[data-magazine="slug"]` on `<body>`.
+- Grid: 16-column float grid; `unit = 72px` at ≥1200px, `60px` at 1056–1199px.
+- Image sizes on R2 (`imageUrl(src, size)` in `src/lib/text.ts`): `grid_1`,
+  `grid_9`, `gallery_thumb`, `originals`, `arqtur_edition`.
+- Scripts with `define:vars` are inlined as-is, not compiled: plain JavaScript
+  only, no TypeScript syntax.
+
+| Magazine | Special layout |
+|----------|---------------|
+| `arquiteturismo` | Panoramic banner (`ArqturBanner`, image from `banner:` in `edicao.md`; 200%-wide, click to pan); 5/2/2 grid columns on the edition page |
+| `drops` | Filmstrip cover layout (`DropsCapa`); no standard article gallery |
+| `entrevista` | No gallery; pages switched with `?page=N` on one URL (sub-paths `/N` redirect there); top nav lists all page titles; bottom nav shows current title + `< N >` |
+
+## Do not
+
+- Add features or abstractions not requested.
+- Add comments that describe *what* the code does (names do that).
+- Change the visual design without an explicit request.
+
+Committing and opening pull requests is part of every change; no need to ask.
 
 ## Where things are
 
@@ -94,8 +137,8 @@ available in cloud sessions; if you need it there, say so.
 |---|---|
 | Header, top menu, magazine bar, footer (every page) | `src/layouts/Base.astro` |
 | Fonts, colours, spacing, grid, responsive breakpoints | `src/styles/global.css` |
-| Article page (page 1 / pages 2+ of projetos) | `src/pages/revistas/read/[magazine]/[edition]/[id].astro`, `.../[id]/[page].astro` |
-| Edition cover page (drops: filmstrip in `src/components/DropsCapa.astro`) | `src/pages/revistas/browse/[magazine]/[edition].astro` |
+| Article page (page 1, incl. all entrevista pages / pages 2+ of other magazines) | `src/pages/revistas/read/[magazine]/[edition]/[id].astro`, `.../[id]/[page].astro` |
+| Edition cover page (drops filmstrip: `src/components/DropsCapa.astro`; arquiteturismo banner: `src/components/ArqturBanner.astro`) | `src/pages/revistas/browse/[magazine]/[edition].astro` |
 | List of editions of a magazine | `src/pages/revistas/browse/[magazine].astro` |
 | Home (`/revistas`) | `src/pages/revistas/index.astro` |
 | Archive, editorial board, submission rules | `src/pages/revistas/{arquivo,expediente,normas}/[magazine].astro` |

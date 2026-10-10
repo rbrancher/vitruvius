@@ -11,9 +11,10 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/__screenshots__/{projectName}/{arg}{ext}',
   expect: {
     toHaveScreenshot: {
-      // Absorbs anti-aliasing noise between machines; a real layout change
-      // moves far more than 1% of the pixels.
-      maxDiffPixelRatio: 0.01,
+      // Rendering is identical across machines (bundled font, no hinting),
+      // so any changed pixel counts: small changes like an italic quote
+      // touch well under 1% of a page.
+      maxDiffPixels: 0,
       animations: 'disabled',
     },
   },

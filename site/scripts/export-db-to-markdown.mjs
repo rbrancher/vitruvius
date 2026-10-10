@@ -74,6 +74,10 @@ for (const a of db.prepare('SELECT * FROM authors').all()) {
 
 // ── Editions ─────────────────────────────────────────────────────────────────
 const magazines = new Map(db.prepare('SELECT id, title FROM magazines').all().map(m => [m.id, m.title]));
+const hasTable = name => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name = ?").get(name);
+const bannerOf = hasTable('editions_images')
+  ? db.prepare('SELECT i.src FROM editions_images x JOIN images i ON i.id = x.image_id WHERE x.edition_id = ? LIMIT 1')
+  : null;
 const editionDir = new Map();
 for (const e of db.prepare('SELECT * FROM editions').all()) {
   const dir = path.join(outDir, 'revistas', magazines.get(e.magazine_id), e.idx);
@@ -81,6 +85,7 @@ for (const e of db.prepare('SELECT * FROM editions').all()) {
   write(path.join(dir, 'edicao.md'), {
     data: toDate(e.published_at),
     publicada: e.status === '1' || e.status === '2',
+    banner: bannerOf?.get(e.id)?.src,
   });
   counts.edicoes++;
 }
@@ -109,6 +114,7 @@ for (const a of db.prepare('SELECT * FROM articles ORDER BY id').all()) {
     secao: a.section,
     chamada: a.lead,
     data: toDate(a.created_at),
+    data_publicacao: toDate(a.published_at),
     publicado: a.status === '2' || a.status === '3',
     formato: 'html',
   };

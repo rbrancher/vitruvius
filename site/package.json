@@ -18,7 +18,8 @@
     "check": "npm run conteudo:validar && npm run typecheck && npm test && npm run build:fixture && npm run test:visual",
     "deploy": "astro build && wrangler pages deploy dist --project-name vitruvius",
     "upload-media": "node --env-file=.env scripts/upload-media.mjs",
-    "sync-media": "node --env-file=.env scripts/server-to-r2.mjs"
+    "sync-media": "node --env-file=.env scripts/server-to-r2.mjs",
+    "sync-arqtur": "node --env-file=.env scripts/arqtur-images-to-r2.mjs"
   },
   "dependencies": {
     "@pagefind/default-ui": "^1.5.2",

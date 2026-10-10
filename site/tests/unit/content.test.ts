@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   getMagazines, getEditionsByMagazine, getPublishedArticlesByEdition, getArticleImages,
   getArticlePages, getArticleAbstracts, getEditionCoverImages, getLatestEditions,
-  getAuthorsWithArticles, getAllPublishedArticles, authorFullName, getEditionByIdx, getArticleWithMeta,
+  getAuthorsWithArticles, getAllPublishedArticles, authorFullName, getEditionByIdx, getArticleWithMeta, getEditionBannerImage,
 } from '../../src/lib/content';
 
 // Runs against the sample content (tests/fixture/conteudo).
@@ -78,5 +78,10 @@ describe('queries', () => {
 
   it('keeps legacy HTML articles as they are', () => {
     expect(getArticleWithMeta(101)!.text).toContain('{--image:1001--}');
+  });
+
+  it('reads the arquiteturismo edition banner', () => {
+    expect(getEditionBannerImage(edition(2, '18.205'))).toBe('media/images/magazines/fixture_arqtur_banner.jpg');
+    expect(getEditionBannerImage(edition(1, '24.286'))).toBeNull();
   });
 });

@@ -114,6 +114,7 @@ const AuthorFile = z.object({
 const EditionFile = z.object({
   data: date,
   publicada: z.boolean().default(true),
+  banner: text, // arquiteturismo: panoramic image at the top of the edition
 }).strict();
 
 const ImageFile = z.object({
@@ -132,6 +133,7 @@ const ArticleFile = z.object({
   secao: text,
   chamada: text,
   data: date,
+  data_publicacao: date,
   publicado: z.boolean().default(true),
   formato,
   resumo: text, resumo_en: text, resumo_es: text, resumo_it: text,
@@ -155,6 +157,7 @@ interface Store {
   tags: Map<number, string[]>;
   images: Map<number, Image[]>;
   pages: Map<number, ArticlePage[]>;
+  banners: Map<number, string>;
 }
 
 export class ContentError extends Error {}
@@ -186,7 +189,7 @@ function load(): Store {
   const s: Store = {
     magazines: MAGAZINES.map(m => ({ id: m.id, title: m.slug, issn: m.issn, status: '1' })),
     editions: [], authors: [], articles: [],
-    abstracts: new Map(), tags: new Map(), images: new Map(), pages: new Map(),
+    abstracts: new Map(), tags: new Map(), images: new Map(), pages: new Map(), banners: new Map(),
   };
   const errors: string[] = [];
   const attempt = (fn: () => void) => {
@@ -217,6 +220,7 @@ function load(): Store {
         if (!fs.existsSync(edFile)) throw new ContentError(`${path.relative(process.cwd(), edDir)}: falta o arquivo edicao.md`);
         const { data } = readMd(edFile, EditionFile);
         s.editions.push({ id, magazine_id: mag.id, idx, published_at: toTimestamp(data.data), status: data.publicada ? '2' : '0' });
+        if (data.banner) s.banners.set(id, data.banner);
       });
 
       for (const f of mdFiles(edDir)) {
@@ -354,6 +358,10 @@ export function getArticlePages(articleId: number): ArticlePage[] {
 
 export function getArticleImages(articleId: number): Image[] {
   return store().images.get(articleId) ?? [];
+}
+
+export function getEditionBannerImage(editionId: number): string | null {
+  return store().banners.get(editionId) ?? null;
 }
 
 export function getEditionCoverImages(editionId: number): Map<number, string> {

@@ -449,7 +449,7 @@ main { border-top: 1px solid #ccc; }
   transition: opacity 0.3s;
   line-height: 1;
 }
-.arqtur-arrow--right { right: 10px; opacity: 1; }
+.arqtur-arrow--right { right: 10px; opacity: 0; }
 .arqtur-arrow--left  { left: 10px;  opacity: 0; }
 
 /* ── Drops edition filmstrip ── */
@@ -808,6 +808,7 @@ main { border-top: 1px solid #ccc; }
   margin-bottom: 12px;
   border: 1px solid #ccc;
   width: fit-content;
+  max-width: 100%;
 }
 .search-form input[type="search"] {
   font-family: 'Courier New', Courier, Arial, sans-serif;
@@ -815,6 +816,7 @@ main { border-top: 1px solid #ccc; }
   border: none;
   padding: 6px 8px;
   width: 360px;
+  min-width: 0;
   outline: none;
 }
 .search-form button {
@@ -942,8 +944,8 @@ main { border-top: 1px solid #ccc; }
 
 /* Expediente two-column layout */
 .expediente-body p { margin-bottom: 10px; line-height: 16px; }
-.expediente-two-col .expediente-info { float: left; width: 348px; margin-right: 12px; }
-.expediente-two-col .expediente-conselho { float: left; width: 528px; margin: 0 6px; }
+.expediente-two-col .expediente-info { float: left; width: 348px; max-width: 100%; margin-right: 12px; }
+.expediente-two-col .expediente-conselho { float: left; width: 528px; max-width: 100%; margin: 0 6px; }
 .expediente-conselho p { margin-bottom: 8px; }
 .conselho-list { list-style: none; }
 .conselho-list li { line-height: 16px; margin-bottom: 4px; }
@@ -952,4 +954,6 @@ main { border-top: 1px solid #ccc; }
 /* ── Responsive: single-column extras ── */
 @media (max-width: 719px) {
   .edition-columns { flex-direction: column; }
+  /* the filmstrip is wider than a phone: swipe it, don't scroll the page */
+  .drops-layout { overflow-x: auto; }
 }

@@ -38,14 +38,34 @@ test('arquiteturismo: the banner shows the image at full size and pans to its hi
   await page.route(/r2\.dev\//, route => route.fulfill({ contentType: 'image/svg+xml',
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="1068" height="152"/>' }));
   await page.goto('/revistas/browse/arquiteturismo/18.205');
+  const banner = page.locator('.arqtur-banner');
   const img = page.locator('.arqtur-banner-img');
   await expect(img).toHaveAttribute('src', /arqtur_edition\/fixture_arqtur_banner\.jpg$/);
-  await expect(img).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  await page.locator('.arqtur-banner').click();
   await expect(img).toHaveCSS('width', '1068px');
   await expect(img).toHaveCSS('height', '152px');
-  const width = await page.locator('.arqtur-banner').evaluate(el => (el as HTMLElement).offsetWidth);
+  const width = await banner.evaluate(el => (el as HTMLElement).offsetWidth);
+  await banner.click();
   await expect(img).toHaveCSS('transform', `matrix(1, 0, 0, 1, -${1068 - width}, 0)`);
-  await page.locator('.arqtur-banner').click();
+  await banner.click();
   await expect(img).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+});
+
+test('arquiteturismo: banner arrows appear only on hover, pointing where it can go', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'no hover on touch screens');
+  await page.goto('/revistas/browse/arquiteturismo/18.205');
+  const banner = page.locator('.arqtur-banner');
+  const left = page.locator('.arqtur-arrow--left');
+  const right = page.locator('.arqtur-arrow--right');
+  await page.mouse.move(0, 0);
+  await expect(left).toHaveCSS('opacity', '0');
+  await expect(right).toHaveCSS('opacity', '0');
+  await banner.hover();
+  await expect(right).toHaveCSS('opacity', '1');
+  await expect(left).toHaveCSS('opacity', '0');
+  await banner.click();
+  await expect(left).toHaveCSS('opacity', '1');
+  await expect(right).toHaveCSS('opacity', '0');
+  await page.mouse.move(0, 0);
+  await expect(left).toHaveCSS('opacity', '0');
+  await expect(right).toHaveCSS('opacity', '0');
 });

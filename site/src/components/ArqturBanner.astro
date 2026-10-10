@@ -19,19 +19,26 @@ const { src, alt = 'arquiteturismo' } = Astro.props;
     const arrowR = banner.querySelector<HTMLElement>('.arqtur-arrow--right')!;
     let panned = false;
 
-    function apply() {
+    // Arrow fades follow the original (app_magazines.js): only the arrow you
+    // can go towards shows, and only while the pointer is over the banner.
+    function fade(arrow: HTMLElement, visible: boolean, ms: number) {
+      arrow.style.transition = `opacity ${ms}ms`;
+      arrow.style.opacity = visible ? '1' : '0';
+    }
+    const towards = () => (panned ? arrowL : arrowR);
+
+    banner.addEventListener('mouseenter', () => fade(towards(), true, 750));
+    banner.addEventListener('mouseleave', () => {
+      fade(arrowL, false, 250);
+      fade(arrowR, false, 250);
+    });
+    banner.addEventListener('click', () => {
+      panned = !panned;
       // As in the original: slide by the part of the image that doesn't fit.
       const hidden = Math.max(0, img.offsetWidth - banner.offsetWidth);
       img.style.transform = panned ? `translateX(-${hidden}px)` : 'translateX(0)';
-      arrowL.style.opacity = panned ? '1' : '0';
-      arrowR.style.opacity = panned ? '0' : '1';
-    }
-
-    banner.addEventListener('click', () => {
-      panned = !panned;
-      apply();
+      fade(panned ? arrowR : arrowL, false, 250);
+      fade(towards(), true, 1500);
     });
-
-    apply();
   });
 </script>

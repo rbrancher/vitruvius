@@ -24,7 +24,7 @@ const yearOf = (a: { edition_idx: string }) => parseInt(a.edition_idx, 10) + 200
 const totalArticles = published.length;
 const totalAuthors  = new Set(published.filter(a => a.author_id != null).map(a => a.author_id)).size;
 const totalImages   = countImages();
-const totalEditions = getAllEditions().length;
+const totalEditions = getAllEditions().filter(e => e.status !== '0').length;
 
 // Articles per year per magazine
 const rawByYear: {mag_id:number; yr:number; cnt:number}[] = [];
@@ -153,7 +153,7 @@ const SPAN_SVG_W = SPAN_LABEL + SPAN_W + 50;
 const SPAN_SVG_H = magSpans.length * (SPAN_BAR_H + SPAN_GAP) + 30;
 ---
 
-<Base title="Vitruvius em números" description="24 anos de arquitetura, urbanismo e design: 7.595 artigos, 2.681 autores, 121.927 imagens.">
+<Base title="Vitruvius em números" description={`24 anos de arquitetura, urbanismo e design: ${totalArticles.toLocaleString('pt-BR')} artigos, ${totalAuthors.toLocaleString('pt-BR')} autores, ${totalImages.toLocaleString('pt-BR')} imagens.`}>
 
 <style>
   /* ── page layout ── */

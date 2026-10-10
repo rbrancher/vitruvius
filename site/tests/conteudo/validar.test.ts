@@ -7,4 +7,4 @@ it('o conteúdo é válido', () => {
   const n = validateContent();
   console.log(`${n.articles} artigos, ${n.editions} edições, ${n.authors} autores. ` +
     `Próximo número de artigo livre: ${nextArticleId()}`);
-});
+}, 120_000); // reading ~20,000 files takes a few seconds

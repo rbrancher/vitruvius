@@ -155,7 +155,12 @@ for (const a of db.prepare('SELECT * FROM articles ORDER BY id').all()) {
   if (data.resumo_ca) {
     if (!data.resumo) { data.resumo = data.resumo_ca; delete data.resumo_ca; }
     else if (data.resumo.trim() === data.resumo_ca.trim()) delete data.resumo_ca;
-    else catalanAbstracts.push(path.relative(outDir, path.join(dir, `${a.id}.md`)));
+    else {
+      // A different second text: kept in the file, not shown on the site.
+      data.resumo_alternativo = data.resumo_ca;
+      delete data.resumo_ca;
+      catalanAbstracts.push(path.relative(outDir, path.join(dir, `${a.id}.md`)));
+    }
   }
   data.tags = q.tags.all(a.id).map(t => t.title);
   data.autores_projeto = q.projectAuthors.all(a.id).map(p => [p.firstname, p.lastname].filter(Boolean).join(' '));
@@ -198,6 +203,6 @@ if (noEdition.length) {
 }
 if (skippedNoMagazine) console.log(`\n${skippedNoMagazine} article(s) without an edition or magazine (deleted records) skipped.`);
 if (catalanAbstracts.length) {
-  console.log(`\n${catalanAbstracts.length} article(s) with a "català" abstract that differs from the Portuguese one (resumo_ca), to review:`);
+  console.log(`\n${catalanAbstracts.length} article(s) with a "català" abstract that differs from the Portuguese one, kept as resumo_alternativo (not shown):`);
   for (const f of catalanAbstracts) console.log(`  ${f}`);
 }

@@ -137,6 +137,7 @@ const ArticleFile = z.object({
   publicado: z.boolean().default(true),
   formato,
   resumo: text, resumo_en: text, resumo_es: text, resumo_it: text, resumo_fr: text, resumo_ca: text,
+  resumo_alternativo: text, // kept from the legacy site, not displayed
   tags: z.array(z.string()).default([]),
   autores_projeto: z.array(z.string()).default([]),
   imagens: z.array(ImageFile).default([]),

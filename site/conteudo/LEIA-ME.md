@@ -89,6 +89,7 @@ Segundo parágrafo, com **negrito**, *itálico* e um [link](https://exemplo.com)
 | `data` | data do artigo (ano-mês-dia) | não |
 | `publicado` | `false` deixa o artigo como rascunho, fora do site | não (padrão `true`) |
 | `resumo`, `resumo_en`, `resumo_es`, `resumo_it`, `resumo_fr`, `resumo_ca` | resumos por idioma (português, inglês, espanhol, italiano, francês, catalão) | não |
+| `resumo_alternativo` | segundo resumo vindo do site antigo; fica guardado, mas não aparece no site | não |
 | `tags` | lista de palavras-chave | não |
 | `imagens` | lista de imagens (veja abaixo) | não |
 | `paginas` | páginas extras (revista projetos, veja abaixo) | não |

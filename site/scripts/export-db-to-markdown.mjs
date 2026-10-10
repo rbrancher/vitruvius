@@ -59,6 +59,7 @@ function write(file, data, body = '') {
 
 const counts = { autores: 0, edicoes: 0, artigos: 0, imagens: 0 };
 const untitled = [];
+const catalanAbstracts = [];
 
 // ── Authors ──────────────────────────────────────────────────────────────────
 const authorSlug = new Map();
@@ -122,9 +123,17 @@ for (const a of db.prepare('SELECT * FROM articles ORDER BY id').all()) {
     formato: 'html',
   };
   if (!a.title) untitled.push(path.relative(outDir, path.join(dir, `${a.id}.md`)));
-  for (const r of q.abstracts.all(a.id)) {
+  const abstracts = q.abstracts.all(a.id);
+  for (const r of abstracts) {
     if (!(r.language_id in LANGS)) throw new Error(`article ${a.id}: unknown abstract language ${r.language_id}`);
     data[`resumo${LANGS[r.language_id]}`] = r.abstract;
+  }
+  // Abstracts filed as language 6 (català) are Portuguese, mislabelled in
+  // early arquiteturismo editions.
+  if (data.resumo_ca) {
+    if (!data.resumo) { data.resumo = data.resumo_ca; delete data.resumo_ca; }
+    else if (data.resumo.trim() === data.resumo_ca.trim()) delete data.resumo_ca;
+    else catalanAbstracts.push(path.relative(outDir, path.join(dir, `${a.id}.md`)));
   }
   data.tags = q.tags.all(a.id).map(t => t.title);
   data.autores_projeto = q.projectAuthors.all(a.id).map(p => [p.firstname, p.lastname].filter(Boolean).join(' '));
@@ -156,4 +165,8 @@ console.log(`Exported to ${outDir}:`, counts);
 if (untitled.length) {
   console.log(`\n${untitled.length} article(s) without a title, exported as drafts (publicado: false):`);
   for (const f of untitled) console.log(`  ${f}`);
+}
+if (catalanAbstracts.length) {
+  console.log(`\n${catalanAbstracts.length} article(s) with a "català" abstract that differs from the Portuguese one (resumo_ca), to review:`);
+  for (const f of catalanAbstracts) console.log(`  ${f}`);
 }

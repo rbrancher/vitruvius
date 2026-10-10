@@ -69,3 +69,36 @@ test('arquiteturismo: banner arrows appear only on hover, pointing where it can 
   await expect(left).toHaveCSS('opacity', '0');
   await expect(right).toHaveCSS('opacity', '0');
 });
+
+test.describe('search: tags and author links', () => {
+  test('clicking a tag on an article lists the articles with that tag', async ({ page }) => {
+    await page.goto('/revistas/read/arquitextos/24.286/101');
+    await page.locator('.tags a.tag', { hasText: 'concreto' }).click();
+    await expect(page).toHaveURL(/\/pesquisa\?tag=concreto$/);
+    await expect(page.locator('#tag-filter')).toHaveText('tag: concreto ×');
+    await expect(page.locator('.search-result')).toHaveCount(1);
+    await expect(page.locator('.search-result .sr-title')).toHaveText('A cidade e o concreto');
+  });
+
+  test('a tag with accents and spaces works too', async ({ page }) => {
+    await page.goto('/pesquisa?tag=' + encodeURIComponent('São Paulo'));
+    await expect(page.locator('.search-result')).toHaveCount(1);
+  });
+
+  test('removing the tag filter clears it', async ({ page }) => {
+    await page.goto('/pesquisa?tag=concreto');
+    await page.locator('#tag-filter').click();
+    await expect(page).toHaveURL(/\/pesquisa$/);
+    await expect(page.locator('#tag-filter')).toBeHidden();
+    await expect(page.locator('.search-result')).toHaveCount(0);
+  });
+
+  test('author links in results open the author page', async ({ page }) => {
+    await page.goto('/pesquisa?q=concreto');
+    const link = page.locator('.search-result .sr-meta a').first();
+    await expect(link).toHaveAttribute('href', '/autor/ana-exemplo');
+    await link.click();
+    await expect(page.locator('h1, .rule-one').first()).toBeVisible();
+    expect(page.url()).toMatch(/\/autor\/ana-exemplo$/);
+  });
+});

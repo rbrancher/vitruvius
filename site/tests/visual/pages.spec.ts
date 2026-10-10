@@ -24,6 +24,7 @@ const PAGES: [name: string, path: string][] = [
   ['normas',                '/revistas/normas/arquitextos'],
   ['autor',                 '/autor/ana-exemplo'],
   ['pesquisa',              '/pesquisa'],
+  ['pesquisa-tag',          '/pesquisa?tag=concreto'],
   ['sobre',                 '/sobre'],
   ['numeros',               '/numeros'],
 ];

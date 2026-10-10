@@ -13,7 +13,7 @@
  *   R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, CF_ACCOUNT_ID
  *
  * Transferred size variants:
- *   grid_9, gallery_thumb, originals
+ *   grid_1, grid_9, gallery_thumb, originals
  *
  * Usage:
  *   npm run sync-media             # all three sizes
@@ -46,6 +46,7 @@ const BUCKET = 'vitruvius-media';
 // Each size maps to its full remote directory path.
 // Sizes with a dedicated SSH_PATH_* env var use that; others fall back to SSH_MEDIA_PATH/<size>.
 const SIZE_PATHS = /** @type {Record<string,string>} */ ({
+  grid_1:        `${SSH_MEDIA_PATH}/grid_1`,
   grid_9:        `${SSH_MEDIA_PATH}/grid_9`,
   gallery_thumb: `${SSH_MEDIA_PATH}/gallery_thumb`,
   originals:     SSH_PATH_ORIGINALS ?? `${SSH_MEDIA_PATH}/originals`,

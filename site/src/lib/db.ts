@@ -193,6 +193,16 @@ export function getArticleImages(articleId: number): Image[] {
   `).all(articleId) as Image[];
 }
 
+export function getEditionBannerImage(editionId: number): string | null {
+  const row = getDb().prepare(`
+    SELECT i.src FROM editions_images ei
+    JOIN images i ON i.id = ei.image_id
+    WHERE ei.edition_id = ?
+    LIMIT 1
+  `).get(editionId) as { src: string } | null;
+  return row?.src ?? null;
+}
+
 export function getEditionCoverImages(editionId: number): Map<number, string> {
   const rows = getDb().prepare(`
     SELECT ai.article_id, i.src

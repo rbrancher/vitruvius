@@ -1,0 +1,35 @@
+---
+interface Props {
+  src: string;
+  alt?: string;
+}
+const { src, alt = 'arquiteturismo' } = Astro.props;
+---
+
+<div class="arqtur-banner">
+  <img class="arqtur-banner-img" src={src} alt={alt} loading="eager" />
+  <span class="arqtur-arrow arqtur-arrow--right">›</span>
+  <span class="arqtur-arrow arqtur-arrow--left">‹</span>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.arqtur-banner').forEach(banner => {
+    const img    = banner.querySelector<HTMLImageElement>('.arqtur-banner-img')!;
+    const arrowL = banner.querySelector<HTMLElement>('.arqtur-arrow--left')!;
+    const arrowR = banner.querySelector<HTMLElement>('.arqtur-arrow--right')!;
+    let panned = false;
+
+    function apply() {
+      img.style.transform = panned ? `translateX(-${banner.offsetWidth}px)` : 'translateX(0)';
+      arrowL.style.opacity = panned ? '1' : '0';
+      arrowR.style.opacity = panned ? '0' : '1';
+    }
+
+    banner.addEventListener('click', () => {
+      panned = !panned;
+      apply();
+    });
+
+    apply();
+  });
+</script>

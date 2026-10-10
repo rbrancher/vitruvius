@@ -1,5 +1,6 @@
 ---
 import Base from '../../../../layouts/Base.astro';
+import DropsCapa from '../../../../components/DropsCapa.astro';
 import {
   getMagazines, getMagazineByTitle, getEditionsByMagazine,
   getEditionByIdx, getPublishedArticlesByEdition, getEditionCoverImages,
@@ -73,6 +74,10 @@ const col2 = articles.slice(half);
         </nav>
       </div>
 
+      {magazineSlug === 'drops' ? (
+        <DropsCapa articles={articles} coverImages={coverImages} edNum={edNum}
+                   magazineSlug={magazineSlug} editionIdx={editionIdx} />
+      ) : (
       <div class="edition-layout">
 
         <!-- Left column: one cover image + synopsis at a time -->
@@ -143,6 +148,7 @@ const col2 = articles.slice(half);
         </div>
 
       </div>
+      )}
     </div>
 
     <script>

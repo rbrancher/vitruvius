@@ -34,10 +34,10 @@ test.describe('entrevista: pages switch with ?page=N', () => {
   });
 });
 
-test('arquiteturismo: the banner shows the image at full size and pans to its hidden part', async ({ page }) => {
+test('arquiteturismo article: the banner shows the image at full size and pans to its hidden part', async ({ page }) => {
   await page.route(/r2\.dev\//, route => route.fulfill({ contentType: 'image/svg+xml',
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="1068" height="152"/>' }));
-  await page.goto('/revistas/browse/arquiteturismo/18.205');
+  await page.goto('/revistas/read/arquiteturismo/18.205/201');
   const banner = page.locator('.arqtur-banner');
   const img = page.locator('.arqtur-banner-img');
   await expect(img).toHaveAttribute('src', /arqtur_edition\/fixture_arqtur_banner\.jpg$/);
@@ -50,9 +50,9 @@ test('arquiteturismo: the banner shows the image at full size and pans to its hi
   await expect(img).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
 });
 
-test('arquiteturismo: banner arrows appear only on hover, pointing where it can go', async ({ page, isMobile }) => {
+test('arquiteturismo article: banner arrows appear only on hover, pointing where it can go', async ({ page, isMobile }) => {
   test.skip(isMobile, 'no hover on touch screens');
-  await page.goto('/revistas/browse/arquiteturismo/18.205');
+  await page.goto('/revistas/read/arquiteturismo/18.205/201');
   const banner = page.locator('.arqtur-banner');
   const left = page.locator('.arqtur-arrow--left');
   const right = page.locator('.arqtur-arrow--right');
@@ -100,5 +100,65 @@ test.describe('search: tags and author links', () => {
     await link.click();
     await expect(page.locator('h1, .rule-one').first()).toBeVisible();
     expect(page.url()).toMatch(/\/autor\/ana-exemplo$/);
+  });
+});
+
+test.describe('arquiteturismo cover', () => {
+  const url = '/revistas/browse/arquiteturismo/18.205';
+  // Math.random is pinned to 0 in these tests, so the featured pair is the
+  // first two articles with a cover: 201 and 203.
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { Math.random = () => 0; });
+    await page.route(/r2\.dev\//, route => route.fulfill({ contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="1068" height="152"/>' }));
+  });
+
+  test('two featured articles start in black and white, one at each end', async ({ page, isMobile }) => {
+    await page.goto(url);
+    const a = page.locator('.arqtur-capa__panel--a img:visible');
+    const b = page.locator('.arqtur-capa__panel--b img:visible');
+    await expect(a).toHaveAttribute('data-id', '201');
+    await expect(b).toHaveAttribute('data-id', '203');
+    await expect(a).toHaveCSS('filter', 'grayscale(1)');
+    await expect(page.locator('.arqtur-capa__entry.is-featured')).toHaveCount(2);
+    await expect(page.locator('.arqtur-capa__lead:visible')).toHaveCount(0);
+  });
+
+  test('clicking the banner slides banner and columns together by 348/1068', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'phones show one column, no slide');
+    await page.goto(url);
+    const strip = page.locator('.arqtur-capa__strip');
+    const width = await strip.evaluate(el => (el as HTMLElement).offsetWidth);
+    const window = await page.locator('.arqtur-capa').evaluate(el => (el as HTMLElement).offsetWidth);
+    expect(width / window).toBeCloseTo(1068 / 720, 2);
+    await page.locator('.arqtur-capa__banner').click();
+    const shift = -width * 348 / 1068;
+    await expect.poll(async () => strip.evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m41))
+      .toBeCloseTo(shift, 0);
+    // after sliding, featured B sits at the right edge of the window
+    const b = await page.locator('.arqtur-capa__panel--b').boundingBox();
+    const capa = await page.locator('.arqtur-capa').boundingBox();
+    expect(b!.x + b!.width).toBeCloseTo(capa!.x + capa!.width, 0);
+  });
+
+  test('hovering an article shows it in colour in both panels and its lead', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'no hover on touch screens');
+    await page.goto(url);
+    await page.locator('.arqtur-capa__entry[data-id="204"]').hover();
+    await expect(page.locator('.arqtur-capa__panel--a img:visible')).toHaveAttribute('data-id', '204');
+    await expect(page.locator('.arqtur-capa__panel--b img:visible')).toHaveAttribute('data-id', '204');
+    await expect(page.locator('.arqtur-capa__panel--a img:visible')).toHaveCSS('filter', 'none');
+    await expect(page.locator('.arqtur-capa__panel--a .arqtur-capa__lead:visible')).toContainText('Calton Hill');
+    await page.mouse.move(0, 0);
+    await expect(page.locator('.arqtur-capa__panel--a img:visible')).toHaveAttribute('data-id', '201');
+    await expect(page.locator('.arqtur-capa__lead:visible')).toHaveCount(0);
+  });
+
+  test('hovering a panel shows its own article in colour with its lead', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'no hover on touch screens');
+    await page.goto(url);
+    await page.locator('.arqtur-capa__panel--a').hover();
+    await expect(page.locator('.arqtur-capa__panel--a img:visible')).toHaveCSS('filter', 'none');
+    await expect(page.locator('.arqtur-capa__panel--a .arqtur-capa__lead:visible')).toContainText('eixo monumental');
   });
 });

@@ -6,7 +6,7 @@ import {
   getEditionBannerImage, authorFullName,
 } from '../../../../lib/content';
 import { stripHtml, imageUrl } from '../../../../lib/text';
-import ArqturBanner from '../../../../components/ArqturBanner.astro';
+import ArqturCapa from '../../../../components/ArqturCapa.astro';
 import DropsCapa from '../../../../components/DropsCapa.astro';
 
 export async function getStaticPaths() {
@@ -76,9 +76,10 @@ const col2 = articles.slice(half);
         </nav>
       </div>
 
-      {bannerSrc && <ArqturBanner src={imageUrl(bannerSrc, 'arqtur_edition')} alt={`arquiteturismo ${editionIdx}`} />}
-
-      {magazineSlug === 'drops' ? (
+      {magazineSlug === 'arquiteturismo' ? (
+        <ArqturCapa articles={articles} coverImages={coverImages} bannerSrc={bannerSrc} edNum={edNum}
+                    magazineSlug={magazineSlug} editionIdx={editionIdx} />
+      ) : magazineSlug === 'drops' ? (
         <DropsCapa
           articles={articles}
           coverImages={coverImages}

@@ -34,16 +34,18 @@ test.describe('entrevista: pages switch with ?page=N', () => {
   });
 });
 
-test('arquiteturismo: the banner pans on click', async ({ page }) => {
+test('arquiteturismo: the banner shows the image at full size and pans to its hidden part', async ({ page }) => {
   await page.route(/r2\.dev\//, route => route.fulfill({ contentType: 'image/svg+xml',
-    body: '<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="300"/>' }));
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="1068" height="152"/>' }));
   await page.goto('/revistas/browse/arquiteturismo/18.205');
   const img = page.locator('.arqtur-banner-img');
   await expect(img).toHaveAttribute('src', /arqtur_edition\/fixture_arqtur_banner\.jpg$/);
   await expect(img).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   await page.locator('.arqtur-banner').click();
+  await expect(img).toHaveCSS('width', '1068px');
+  await expect(img).toHaveCSS('height', '152px');
   const width = await page.locator('.arqtur-banner').evaluate(el => (el as HTMLElement).offsetWidth);
-  await expect(img).toHaveCSS('transform', `matrix(1, 0, 0, 1, -${width}, 0)`);
+  await expect(img).toHaveCSS('transform', `matrix(1, 0, 0, 1, -${1068 - width}, 0)`);
   await page.locator('.arqtur-banner').click();
   await expect(img).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
 });

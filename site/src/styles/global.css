@@ -449,7 +449,7 @@ main { border-top: 1px solid #ccc; }
   transition: opacity 0.3s;
   line-height: 1;
 }
-.arqtur-arrow--right { right: 10px; opacity: 1; }
+.arqtur-arrow--right { right: 10px; opacity: 0; }
 .arqtur-arrow--left  { left: 10px;  opacity: 0; }
 
 /* ── Drops edition filmstrip ── */
@@ -808,6 +808,7 @@ main { border-top: 1px solid #ccc; }
   margin-bottom: 12px;
   border: 1px solid #ccc;
   width: fit-content;
+  max-width: 100%;
 }
 .search-form input[type="search"] {
   font-family: 'Courier New', Courier, Arial, sans-serif;
@@ -815,6 +816,7 @@ main { border-top: 1px solid #ccc; }
   border: none;
   padding: 6px 8px;
   width: 360px;
+  min-width: 0;
   outline: none;
 }
 .search-form button {
@@ -942,14 +944,64 @@ main { border-top: 1px solid #ccc; }
 
 /* Expediente two-column layout */
 .expediente-body p { margin-bottom: 10px; line-height: 16px; }
-.expediente-two-col .expediente-info { float: left; width: 348px; margin-right: 12px; }
-.expediente-two-col .expediente-conselho { float: left; width: 528px; margin: 0 6px; }
+.expediente-two-col .expediente-info { float: left; width: 348px; max-width: 100%; margin-right: 12px; }
+.expediente-two-col .expediente-conselho { float: left; width: 528px; max-width: 100%; margin: 0 6px; }
 .expediente-conselho p { margin-bottom: 8px; }
 .conselho-list { list-style: none; }
 .conselho-list li { line-height: 16px; margin-bottom: 4px; }
 .normas-content p { margin-bottom: 12px; }
 
+/* ── Arquiteturismo edition cover (ArqturCapa) ──
+   Original proportions: a 1068px strip seen through a 720px window, slid
+   by 348px. Featured A | list 1 | list 2 | featured B = 348/168/168/348
+   with 12px gaps. */
+.arqtur-capa { overflow: hidden; }
+.arqtur-capa__strip { width: calc(100% * 1068 / 720); transition: transform 0.75s ease; }
+.arqtur-capa__strip.is-panned { transform: translateX(calc(-100% * 348 / 1068)); }
+.arqtur-capa__banner { position: relative; margin-bottom: 8px; cursor: pointer; }
+.arqtur-capa__banner img { display: block; width: 100%; height: auto; aspect-ratio: 1068 / 152; background: #eee; }
+.arqtur-capa__arrow {
+  position: absolute;
+  top: 10.5%; height: 79%; width: 4.5%;   /* original: 48x120 at top 16 */
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  opacity: 0; pointer-events: none;
+}
+.arqtur-capa__arrow--right { left: calc(100% * 640 / 1068); }
+.arqtur-capa__arrow--left  { left: calc(100% * 356 / 1068); }
+.arqtur-capa__columns {
+  display: grid;
+  grid-template-columns: 348fr 168fr 168fr 348fr;
+  column-gap: calc(100% * 12 / 1068);
+}
+.arqtur-capa__panel--a { grid-column: 1; grid-row: 1; }
+.arqtur-capa__list--1  { grid-column: 2; grid-row: 1; min-height: 480px; }
+.arqtur-capa__list--2  { grid-column: 3; grid-row: 1; }
+.arqtur-capa__panel--b { grid-column: 4; grid-row: 1; }
+.arqtur-capa__panel { min-height: 400px; }
+.arqtur-capa__panel img { display: block; width: 100%; height: auto; }
+.arqtur-capa__panel img.is-original { filter: grayscale(1); }
+.arqtur-capa .is-hidden { display: none; }
+.arqtur-capa__lead { color: #000; margin-top: 8px; }
+.arqtur-capa__entry { color: #666; margin-bottom: 12px; }
+.arqtur-capa__entry.is-featured { color: #000; }
+.arqtur-capa__entry a { color: inherit; display: block; }
+.arqtur-capa__index { font-size: 12px; }
+.arqtur-capa__title { font-size: 12px; font-weight: bold; }
+.arqtur-capa__subtitle { font-size: 12px; }
+.arqtur-capa__author { font-size: 12px; font-style: italic; }
+
 /* ── Responsive: single-column extras ── */
 @media (max-width: 719px) {
   .edition-columns { flex-direction: column; }
+  /* the filmstrip is wider than a phone: swipe it, don't scroll the page */
+  .drops-layout { overflow-x: auto; }
+  /* arquiteturismo cover: one column, no slide */
+  .arqtur-capa__strip { width: 100%; }
+  .arqtur-capa__strip.is-panned { transform: none; }
+  .arqtur-capa__banner { cursor: default; }
+  .arqtur-capa__arrow { display: none; }
+  .arqtur-capa__columns { grid-template-columns: 1fr; }
+  .arqtur-capa__columns > * { grid-column: 1; grid-row: auto; min-height: 0; }
+  .arqtur-capa__panel--b { order: 1; }
 }

@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getMagazines, getAllPublishedArticles, authorFullName } from '../../lib/content';
+import { getMagazines, getAllPublishedArticles, getArticleTags, authorFullName } from '../../lib/content';
 
 // Build the search index at build time; filtering runs client-side against this data.
 const magazines = getMagazines();
@@ -28,12 +28,19 @@ const searchIndex = allArticles.map(a => ({
   au: (a.author_firstname || a.author_lastname)
     ? authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })
     : '',
-  ai: a.author_id ?? 0,
+  as: a.author_slug ?? '',
   m: a.magazine_title,
   mi: a.magazine_id,
   e: a.edition_idx,
   y: a.created_at ? new Date(a.created_at * 1000).getFullYear() : 0,
+  g: getArticleTags(a.id).map(t => t.title),
 }));
+
+// Year filters cover the years that have articles.
+const years = searchIndex.map(a => a.y).filter(Boolean);
+const firstYear = Math.min(...years);
+const lastYear = Math.max(...years);
+const yearRange = Array.from({ length: lastYear - firstYear + 1 }, (_, i) => firstYear + i);
 ---
 
 <Base
@@ -60,17 +67,19 @@ const searchIndex = allArticles.map(a => ({
 
       <select id="f-year-from" name="from">
         <option value="">a partir de…</option>
-        {Array.from({ length: 26 }, (_, i) => 2000 + i).map(y => (
+        {yearRange.map(y => (
           <option value={y}>{y}</option>
         ))}
       </select>
 
       <select id="f-year-to" name="to">
         <option value="">até…</option>
-        {Array.from({ length: 26 }, (_, i) => 2025 - i).map(y => (
+        {[...yearRange].reverse().map(y => (
           <option value={y}>{y}</option>
         ))}
       </select>
+
+      <a id="tag-filter" class="tag" href="#" title="remover o filtro de tag" hidden></a>
 
       <button id="clear-filters" type="button"
         style="font-size:0.78rem;border:none;background:none;cursor:pointer;text-decoration:underline;">
@@ -94,12 +103,16 @@ const searchIndex = allArticles.map(a => ({
 <script>
   const raw = document.getElementById('search-data')!.textContent!;
   const INDEX: any[] = JSON.parse(raw);
+  // Titles keep their HTML (italics) for display; search the plain text.
+  for (const a of INDEX) a.h = `${a.t} ${a.s} ${a.ab} ${a.au}`.replace(/<[^>]+>/g, '').toLowerCase();
 
   const qEl      = document.getElementById('q') as HTMLInputElement;
   const magEl    = document.getElementById('f-magazine') as HTMLSelectElement;
   const fromEl   = document.getElementById('f-year-from') as HTMLSelectElement;
   const toEl     = document.getElementById('f-year-to') as HTMLSelectElement;
   const clearBtn = document.getElementById('clear-filters') as HTMLButtonElement;
+  const tagEl    = document.getElementById('tag-filter') as HTMLAnchorElement;
+  let tag = '';
   const statusEl = document.getElementById('search-status')!;
   const resultEl = document.getElementById('results')!;
 
@@ -111,6 +124,7 @@ const searchIndex = allArticles.map(a => ({
     magEl.value    = p.get('magazine') ?? '';
     fromEl.value   = p.get('from')    ?? '';
     toEl.value     = p.get('to')      ?? '';
+    tag            = p.get('tag')     ?? '';
   }
 
   function writeUrl() {
@@ -119,6 +133,7 @@ const searchIndex = allArticles.map(a => ({
     if (magEl.value)         p.set('magazine', magEl.value);
     if (fromEl.value)        p.set('from', fromEl.value);
     if (toEl.value)          p.set('to', toEl.value);
+    if (tag)                 p.set('tag', tag);
     const qs = p.toString();
     const newUrl = qs ? `${location.pathname}?${qs}` : location.pathname;
     history.pushState(null, '', newUrl);
@@ -132,7 +147,10 @@ const searchIndex = allArticles.map(a => ({
     const from = fromEl.value ? Number(fromEl.value) : 0;
     const to   = toEl.value   ? Number(toEl.value)   : 9999;
 
-    if (!q && !mag && !from && to === 9999) {
+    tagEl.hidden = !tag;
+    tagEl.textContent = `tag: ${tag} ×`;
+
+    if (!q && !mag && !from && to === 9999 && !tag) {
       statusEl.textContent = '';
       resultEl.innerHTML = '';
       return;
@@ -144,9 +162,9 @@ const searchIndex = allArticles.map(a => ({
       if (mag  && a.m !== mag)       return false;
       if (from && a.y < from)        return false;
       if (to < 9999 && a.y > to)     return false;
+      if (tag && !a.g.includes(tag)) return false;
       if (terms.length === 0)        return true;
-      const haystack = `${a.t} ${a.s} ${a.ab} ${a.au}`.toLowerCase();
-      return terms.every(term => haystack.includes(term));
+      return terms.every(term => a.h.includes(term));
     }).slice(0, 100);
 
     statusEl.textContent = results.length === 0
@@ -165,11 +183,11 @@ const searchIndex = allArticles.map(a => ({
 
     resultEl.innerHTML = results.map(a => `
       <li class="search-result">
-        <a class="sr-title" href="/revistas/read/${a.m}/${a.e}/${a.id}">${escHtml(a.t)}</a>
+        <a class="sr-title" href="/revistas/read/${a.m}/${a.e}/${a.id}">${a.t}</a>
         <div class="sr-meta">
           <span class="mag">${escHtml(LABELS[a.m] ?? a.m)}</span>
           · ed. ${escHtml(a.e)}
-          ${a.au && a.ai ? `· <a href="/autor/${a.ai}">${escHtml(a.au)}</a>` : a.au ? `· ${escHtml(a.au)}` : ''}
+          ${a.au && a.as ? `· <a href="/autor/${a.as}">${escHtml(a.au)}</a>` : a.au ? `· ${escHtml(a.au)}` : ''}
           ${a.y ? `· ${a.y}` : ''}
         </div>
         ${a.ab ? `<p class="sr-abstract">${escHtml(a.ab.slice(0, 200))}…</p>` : ''}
@@ -194,7 +212,14 @@ const searchIndex = allArticles.map(a => ({
   );
 
   clearBtn.addEventListener('click', () => {
-    qEl.value = magEl.value = fromEl.value = toEl.value = '';
+    qEl.value = magEl.value = fromEl.value = toEl.value = tag = '';
+    writeUrl();
+    search();
+  });
+
+  tagEl.addEventListener('click', e => {
+    e.preventDefault();
+    tag = '';
     writeUrl();
     search();
   });

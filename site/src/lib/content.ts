@@ -166,7 +166,15 @@ interface Store {
 export class ContentError extends Error {}
 
 function readMd<T extends z.ZodTypeAny>(file: string, schema: T): { data: z.output<T>; body: string } {
-  const raw = matter(fs.readFileSync(file, 'utf8'));
+  let raw: matter.GrayMatterFile<string>;
+  try {
+    raw = matter(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    const line = (e as { mark?: { line?: number } }).mark?.line;
+    throw new ContentError(`${path.relative(process.cwd(), file)}\n  erro de formatação no topo do arquivo` +
+      `${line != null ? ` (perto da linha ${line + 1})` : ''}. Dica: textos com dois-pontos (:) ou que começam com aspas ` +
+      `devem ficar entre aspas simples, ex. chamada: 'Lisboa: a cidade'`);
+  }
   const parsed = schema.safeParse(raw.data, { errorMap });
   if (!parsed.success) {
     const issues = parsed.error.issues.map(i => `  ${i.path.join('.') || '(arquivo)'}: ${i.message}`).join('\n');

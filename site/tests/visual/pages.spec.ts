@@ -24,6 +24,7 @@ const PAGES: [name: string, path: string][] = [
   ['normas',                '/revistas/normas/arquitextos'],
   ['autor',                 '/autor/ana-exemplo'],
   ['pesquisa',              '/pesquisa'],
+  ['pesquisa-tag',          '/pesquisa?tag=concreto'],
   ['sobre',                 '/sobre'],
   ['numeros',               '/numeros'],
 ];
@@ -78,6 +79,9 @@ for (const [name, url] of PAGES) {
     await page.waitForLoadState('networkidle');
     expect(await page.evaluate(() => [...document.fonts].some(f => f.status === 'loaded')),
       'bundled test font should be in use').toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth),
+      'nothing may stick out past the right edge (sideways scrolling)')
+      .toBeLessThanOrEqual(page.viewportSize()!.width);
     await expect(page).toHaveScreenshot(`${name}.png`, {
       fullPage: true,
       // The footer shows the build year; hide it so screenshots survive New Year.

@@ -1,0 +1,140 @@
+---
+// Arquiteturismo edition cover, as in the original (arquiteturismo_capa.php,
+// app_magazines.js): a strip wider than the page —
+//   [ featured A | list 1 | list 2 | featured B ]
+// under a panoramic banner of the same width. Clicking the banner slides
+// banner and strip together to reveal featured B. The proportions are the
+// original's: a 1068px strip seen through a 720px window.
+import { stripHtml, imageUrl } from '../lib/text';
+import { authorFullName, type ArticleWithMeta } from '../lib/content';
+
+interface Props {
+  articles:     ArticleWithMeta[];
+  coverImages:  Map<number, string>;
+  bannerSrc:    string | null;
+  edNum:        string;
+  magazineSlug: string;
+  editionIdx:   string;
+}
+const { articles, coverImages, bannerSrc, edNum, magazineSlug, editionIdx } = Astro.props;
+
+// The two featured articles. The original picks them at random among those
+// with a cover (Article_Model::getSelectedByEdition) on every visit; the
+// script below does the same in the browser. Without it: the first two.
+const featured = articles.filter(a => coverImages.has(a.id)).slice(0, 2);
+const half = Math.ceil(articles.length / 2);
+const lists = [articles.slice(0, half), articles.slice(half)];
+const href = (a: ArticleWithMeta) => `/revistas/read/${magazineSlug}/${editionIdx}/${a.id}`;
+const index = (a: ArticleWithMeta) => `${edNum}.${a.idx ?? ''}${a.section ? ` ${a.section}` : ''}`;
+const withCover = articles.filter(a => coverImages.has(a.id));
+---
+
+<div class="arqtur-capa">
+  <div class="arqtur-capa__strip">
+
+    {bannerSrc && (
+      <div class="arqtur-capa__banner" title="clique para ver o resto da imagem">
+        <img src={imageUrl(bannerSrc, 'arqtur_edition')} alt={`arquiteturismo ${editionIdx}`} />
+        <span class="arqtur-capa__arrow arqtur-capa__arrow--right">›</span>
+        <span class="arqtur-capa__arrow arqtur-capa__arrow--left">‹</span>
+      </div>
+    )}
+
+    <div class="arqtur-capa__columns">
+      {[0, 1].map(p => (
+        <div class={`arqtur-capa__panel arqtur-capa__panel--${p === 0 ? 'a' : 'b'}`}
+             data-featured={featured[p]?.id}>
+          {withCover.map(a => (
+            <img src={imageUrl(coverImages.get(a.id)!, 'grid_9')} alt={stripHtml(a.title)} loading="lazy"
+                 data-id={a.id}
+                 class={a.id === featured[p]?.id ? 'is-original' : 'is-hidden'} />
+          ))}
+          {articles.map(a => {
+            const lead = stripHtml(a.lead ?? '').trim();
+            return lead ? <p class="arqtur-capa__lead is-hidden" data-id={a.id}>{lead}</p> : null;
+          })}
+        </div>
+      ))}
+
+      {lists.map((list, i) => (
+        <div class={`arqtur-capa__list arqtur-capa__list--${i + 1}`}>
+          {list.map(a => (
+            <div class={`arqtur-capa__entry${featured.some(f => f.id === a.id) ? ' is-featured' : ''}`} data-id={a.id}>
+              <div class="arqtur-capa__index">{index(a)}</div>
+              <a class="arqtur-capa__title" href={href(a)} set:html={a.title} />
+              {a.subtitle && <a class="arqtur-capa__subtitle" href={href(a)} set:html={a.subtitle} />}
+              {(a.author_firstname || a.author_lastname) && (
+                <a class="arqtur-capa__author" href={href(a)}>
+                  {authorFullName({ firstname: a.author_firstname, lastname: a.author_lastname })}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.arqtur-capa').forEach(capa => {
+    const strip  = capa.querySelector<HTMLElement>('.arqtur-capa__strip')!;
+    const banner = capa.querySelector<HTMLElement>('.arqtur-capa__banner');
+    const panels = [...capa.querySelectorAll<HTMLElement>('.arqtur-capa__panel')];
+
+    // ── Images and leads (original: hover handlers in app_magazines.js) ──
+    function show(panel: HTMLElement, id: string, withLead: boolean) {
+      const img = panel.querySelector<HTMLElement>(`img[data-id="${id}"]`);
+      if (img) {
+        panel.querySelectorAll('img').forEach(i => i.classList.add('is-hidden'));
+        img.classList.remove('is-hidden', 'is-original');
+        img.classList.add('is-color');
+      }
+      if (withLead) panel.querySelector(`.arqtur-capa__lead[data-id="${id}"]`)?.classList.remove('is-hidden');
+    }
+    function reset() {
+      for (const panel of panels) {
+        panel.querySelectorAll<HTMLElement>('img').forEach(i => {
+          const original = i.dataset.id === panel.dataset.featured;
+          i.classList.toggle('is-hidden', !original);
+          i.classList.toggle('is-original', original);
+          i.classList.remove('is-color');
+        });
+        panel.querySelectorAll('.arqtur-capa__lead').forEach(l => l.classList.add('is-hidden'));
+      }
+    }
+    // Random featured pair, as in the original.
+    const candidates = [...panels[0].querySelectorAll<HTMLElement>('img')].map(i => i.dataset.id!);
+    const pick = () => candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+    panels.forEach(p => { const id = pick(); if (id) p.dataset.featured = id; else delete p.dataset.featured; });
+    capa.querySelectorAll<HTMLElement>('.arqtur-capa__entry').forEach(e =>
+      e.classList.toggle('is-featured', panels.some(p => p.dataset.featured === e.dataset.id)));
+    reset();
+
+    capa.querySelectorAll<HTMLElement>('.arqtur-capa__entry').forEach(entry => {
+      entry.addEventListener('mouseenter', () => panels.forEach((p, i) => show(p, entry.dataset.id!, i === 0)));
+      entry.addEventListener('mouseleave', reset);
+    });
+    for (const panel of panels) {
+      panel.addEventListener('mouseenter', () => panel.dataset.featured && show(panel, panel.dataset.featured, true));
+      panel.addEventListener('mouseleave', reset);
+    }
+
+    // ── Slide (original: image-major click/hover) ──
+    if (!banner) return;
+    const arrowL = banner.querySelector<HTMLElement>('.arqtur-capa__arrow--left')!;
+    const arrowR = banner.querySelector<HTMLElement>('.arqtur-capa__arrow--right')!;
+    const fade = (arrow: HTMLElement, visible: boolean, ms: number) => {
+      arrow.style.transition = `opacity ${ms}ms`;
+      arrow.style.opacity = visible ? '1' : '0';
+    };
+    const panned = () => strip.classList.contains('is-panned');
+    banner.addEventListener('mouseenter', () => fade(panned() ? arrowL : arrowR, true, 750));
+    banner.addEventListener('mouseleave', () => { fade(arrowL, false, 250); fade(arrowR, false, 250); });
+    banner.addEventListener('click', () => {
+      strip.classList.toggle('is-panned');
+      fade(panned() ? arrowR : arrowL, false, 250);
+      fade(panned() ? arrowL : arrowR, true, 1500);
+    });
+  });
+</script>

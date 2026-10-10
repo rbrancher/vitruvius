@@ -37,6 +37,11 @@ publicada: true
 - `data` — data de publicação (ano-mês-dia).
 - `publicada` — `false` esconde a edição do site.
 
+A pasta `sem-edicao/` de cada revista guarda artigos que nunca foram
+colocados numa edição (rascunhos do site antigo). Ela não aparece no site.
+Para publicar um desses artigos, mova o arquivo para a pasta da edição certa
+e mude `publicado` para `true`.
+
 ## Um artigo: `15321.md`
 
 O topo do arquivo, entre as linhas `---`, traz os dados do artigo. Abaixo vem

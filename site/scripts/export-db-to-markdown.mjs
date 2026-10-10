@@ -60,6 +60,8 @@ function write(file, data, body = '') {
 const counts = { autores: 0, edicoes: 0, artigos: 0, imagens: 0 };
 const untitled = [];
 const catalanAbstracts = [];
+const noEdition = [];
+let skippedNoMagazine = 0;
 
 // ── Authors ──────────────────────────────────────────────────────────────────
 const authorSlug = new Map();
@@ -107,8 +109,17 @@ const q = {
 };
 
 for (const a of db.prepare('SELECT * FROM articles ORDER BY id').all()) {
-  const dir = editionDir.get(a.edition_id);
-  if (!dir) { console.warn(`article ${a.id}: edition ${a.edition_id} missing, skipped`); continue; }
+  // Articles never assigned to an edition (none are on the site) are kept as
+  // drafts in a hidden edition; those without a magazine are deleted records.
+  let dir = editionDir.get(a.edition_id);
+  const orphan = !dir;
+  if (orphan) {
+    const mag = magazines.get(a.magazine_id);
+    if (!mag) { skippedNoMagazine++; continue; }
+    dir = path.join(outDir, 'revistas', mag, 'sem-edicao');
+    if (!fs.existsSync(path.join(dir, 'edicao.md'))) write(path.join(dir, 'edicao.md'), { publicada: false });
+    noEdition.push(path.relative(outDir, path.join(dir, `${a.id}.md`)));
+  }
 
   const data = {
     indice: a.idx,
@@ -119,7 +130,7 @@ for (const a of db.prepare('SELECT * FROM articles ORDER BY id').all()) {
     chamada: a.lead,
     data: toDate(a.created_at),
     data_publicacao: toDate(a.published_at),
-    publicado: (a.status === '2' || a.status === '3') && !!a.title,
+    publicado: (a.status === '2' || a.status === '3') && !!a.title && !orphan,
     formato: 'html',
   };
   if (!a.title) untitled.push(path.relative(outDir, path.join(dir, `${a.id}.md`)));
@@ -166,6 +177,11 @@ if (untitled.length) {
   console.log(`\n${untitled.length} article(s) without a title, exported as drafts (publicado: false):`);
   for (const f of untitled) console.log(`  ${f}`);
 }
+if (noEdition.length) {
+  console.log(`\n${noEdition.length} article(s) without an edition, exported as drafts in sem-edicao/:`);
+  for (const f of noEdition) console.log(`  ${f}`);
+}
+if (skippedNoMagazine) console.log(`\n${skippedNoMagazine} article(s) without an edition or magazine (deleted records) skipped.`);
 if (catalanAbstracts.length) {
   console.log(`\n${catalanAbstracts.length} article(s) with a "català" abstract that differs from the Portuguese one (resumo_ca), to review:`);
   for (const f of catalanAbstracts) console.log(`  ${f}`);

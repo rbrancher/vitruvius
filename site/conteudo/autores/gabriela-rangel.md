@@ -1,0 +1,9 @@
+---
+nome: GABRIELA
+sobrenome: RANGEL
+instituicao: UFMT
+titulacao: estudante
+formato: html
+---
+
+aRQUITETURA eCOLÓGICA, MATERIAIS RECICLÁVEIS, INTERIORIDADE, MANDALAS, DEU PRA ENTENDER MAIS O OU MENOS O TIPO DA ARQUITETA, NÉ?
